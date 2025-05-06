@@ -1,33 +1,26 @@
+# models.py
 import hashlib
 import json
 import uuid
 
 from django.contrib.gis.db import models as gis_models
-from django.contrib.gis.geos import Point
-from django.db import models, connection
-from django.db.models.signals import post_save, post_delete
+from django.db import models
+from django.db.models.signals import post_delete, m2m_changed
 from django.dispatch import receiver
 from django.core.validators import MinValueValidator, MaxValueValidator
-from django.contrib.gis.db.models import GeometryField  # 👈 belangrijk
-from django.contrib import messages
+
 
 def get_tracker_field_choices():
-    """
-    Geeft een lijst van veldnamen uit het Tracker-model, inclusief geometryvelden.
-
-    Returns:
-        list: Lijst met tuples (veldnaam, veldnaam) geschikt voor use in keuzelijsten.
-    """
     return [
         (field.name, field.name)
         for field in Tracker._meta.get_fields()
-        if isinstance(field, (models.Field, GeometryField)) and field.concrete and not field.auto_created
+        if isinstance(field, models.Field) and field.concrete and not field.auto_created
     ]
+
 
 class TrackerIdentifierType(models.Model):
     name = models.CharField(max_length=50, unique=True)
     description = models.CharField(max_length=255, blank=True, null=True)
-    is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return f"{self.name} - {self.description or ''}".strip()
@@ -38,6 +31,12 @@ class TrackerGroup(models.Model):
     area = gis_models.MultiPolygonField(geography=True, blank=True, null=True, srid=4326)
     visible_fields = models.JSONField(default=list, blank=True)
 
+    identifier_types = models.ManyToManyField(
+        TrackerIdentifierType,
+        blank=True,
+        related_name='groups'
+    )
+
     def __str__(self):
         return f'{self.pk} | {self.name}'
 
@@ -47,104 +46,109 @@ class Tracker(models.Model):
     screen_name = models.CharField(max_length=255)
     icon = models.CharField(max_length=255)
 
-    # AIS velden
     ais_type = models.CharField(max_length=255, blank=True, null=True)
     ais_name = models.CharField(max_length=255, blank=True, null=True)
     ais_callsign = models.CharField(max_length=255, blank=True, null=True)
-    ais_length = models.DecimalField(
-        max_digits=5, decimal_places=2,
-        validators=[MinValueValidator(0), MaxValueValidator(500)],
-        default=0, blank=True, null=True
-    )
-    ais_width = models.DecimalField(
-        max_digits=5, decimal_places=2,
-        validators=[MinValueValidator(0), MaxValueValidator(500)],
-        default=0, blank=True, null=True
-    )
+    ais_length = models.DecimalField(max_digits=5, decimal_places=2,
+                                     validators=[MinValueValidator(0), MaxValueValidator(500)],
+                                     default=0, blank=True, null=True)
+    ais_width = models.DecimalField(max_digits=5, decimal_places=2,
+                                    validators=[MinValueValidator(0), MaxValueValidator(500)],
+                                    default=0, blank=True, null=True)
 
-    # ADS-B velden
     adsb_type = models.CharField(max_length=255, blank=True, null=True)
     adsb_registration = models.CharField(max_length=255, blank=True, null=True)
     adsb_callsign = models.CharField(max_length=255, blank=True, null=True)
 
-    # Positie
-    latitude = models.DecimalField(
-        max_digits=9, decimal_places=7,
-        validators=[MinValueValidator(-90), MaxValueValidator(90)],
-        default=0, blank=True, null=True
-    )
-    longitude = models.DecimalField(
-        max_digits=10, decimal_places=7,
-        validators=[MinValueValidator(-180), MaxValueValidator(180)],
-        default=0, blank=True, null=True
-    )
     altitude = models.FloatField(default=0, blank=True, null=True)
     speed = models.FloatField(blank=True, null=True)
     heading = models.FloatField(blank=True, null=True)
-    position_timestamp = models.BigIntegerField(
-        blank=True, null=True, help_text="UNIX tijd in milliseconden (UTC)"
-    )
+    position_timestamp = models.BigIntegerField(blank=True, null=True, help_text="UNIX tijd in ms")
     position = gis_models.PointField(geography=True, blank=True, null=True, srid=4326)
 
     groups = models.ManyToManyField(TrackerGroup, related_name='trackers', blank=True)
 
-    @property
-    def ais_dimensions(self):
-        """
-        Samengestelde weergave van AIS lengte en breedte in meters.
-
-        Returns:
-            str: Formaat 'Lengte x Breedte' zoals '123.4m x 23.1m', of '-' als niet beschikbaar.
-        """
-        if self.ais_length and self.ais_width:
-            return f"{self.ais_length}m x {self.ais_width}m"
-        elif self.ais_length:
-            return f"{self.ais_length}m x ?"
-        elif self.ais_width:
-            return f"? x {self.ais_width}m"
-        return "-"
-
-    def save(self, *args, **kwargs):
-        if self.position:
-            # Haal lat/lon/altitude uit geometrie
-            self.longitude = self.position.x
-            self.latitude = self.position.y
-            # Alleen als er een Z-dimensie is
-            if self.position.has_z:
-                self.altitude = self.position.z
-        elif self.latitude is not None and self.longitude is not None:
-            # Maak een nieuwe geometrie op basis van velden
-            coords = [float(self.longitude), float(self.latitude)]
-            self.position = Point(*coords)
-        else:
-            self.position = None
-
-        super().save(*args, **kwargs)
     def __str__(self):
         return self.screen_name
 
+@receiver(m2m_changed, sender=Tracker.groups.through)
+def ensure_identifier_type_groups_present(sender, instance, action, **kwargs):
+    if action in ['post_remove', 'post_clear', 'post_add']:
+        # Huidige groepen van de tracker
+        current_group_ids = set(instance.groups.values_list('id', flat=True))
+
+        # Groepen die deze tracker zou moeten hebben op basis van identifiers
+        expected_group_ids = set(
+            TrackerGroup.objects.filter(
+                identifier_types__in=instance.identifiers.values_list('identifier_type', flat=True)
+            ).values_list('id', flat=True)
+        )
+
+        missing_group_ids = expected_group_ids - current_group_ids
+
+        if missing_group_ids:
+            instance.groups.add(*missing_group_ids)
 
 class TrackerIdentifier(models.Model):
     external_id = models.CharField(max_length=255)
-    identifier_type = models.ForeignKey(
-        TrackerIdentifierType,
-        on_delete=models.PROTECT,
-        related_name='tracker_identifiers'
-    )
+    identifier_type = models.ForeignKey(TrackerIdentifierType, on_delete=models.PROTECT, related_name='tracker_identifiers')
     tracker = models.ForeignKey(Tracker, on_delete=models.CASCADE, related_name='identifiers')
     identkey = models.CharField(max_length=255, unique=True, editable=False)
 
     def save(self, *args, **kwargs):
-        type_str = self.identifier_type.name if self.identifier_type else "UNKNOWN"
-        self.identkey = f"{type_str}_{self.external_id}".upper()
+        self.identkey = f"{self.identifier_type.name}_{self.external_id}".upper()
         super().save(*args, **kwargs)
+        if self.identifier_type:
+            self.tracker.groups.add(*self.identifier_type.groups.all())
 
     def __str__(self):
         return f"{self.identifier_type.name}: {self.external_id}"
 
 
+@receiver(post_delete, sender=TrackerIdentifier)
+def remove_groups_on_identifier_delete(sender, instance, **kwargs):
+    tracker = instance.tracker
+    for group in instance.identifier_type.groups.all():
+        other_ids = tracker.identifiers.filter(identifier_type__groups=group).exclude(pk=instance.pk)
+        if not other_ids.exists():
+            tracker.groups.remove(group)
+
+
+@receiver(m2m_changed, sender=TrackerGroup.identifier_types.through)
+def sync_trackers_on_identifiertype_change(sender, instance, action, pk_set, **kwargs):
+    if action == 'post_add':
+        identifiers = TrackerIdentifier.objects.filter(identifier_type_id__in=pk_set)
+        trackers = Tracker.objects.filter(identifiers__in=identifiers).distinct()
+        for tracker in trackers:
+            tracker.groups.add(instance)
+
+    elif action == 'post_remove':
+        removed_type_ids = pk_set  # Verwijderde identifier_type IDs
+        trackers = Tracker.objects.filter(groups=instance).distinct()
+
+        for tracker in trackers:
+            # Alle identifier types van deze tracker
+            tracker_type_ids = set(tracker.identifiers.values_list('identifier_type_id', flat=True))
+
+            # Zijn er types over die nog aan deze groep gekoppeld zijn?
+            still_valid_type_ids = set(
+                    instance.identifier_types.values_list('id', flat=True)
+            )
+
+            # Is de tracker nog steeds geldig lid van de groep?
+            if not tracker_type_ids.intersection(still_valid_type_ids):
+                # Check of hij enkel in de groep zat vanwege types die nu verwijderd zijn
+                had_removed_type = tracker.identifiers.filter(
+                        identifier_type_id__in=removed_type_ids
+                ).exists()
+
+                if had_removed_type:
+                    tracker.groups.remove(instance)
+
+
 class Message(models.Model):
     tracker_identifier = models.ForeignKey(TrackerIdentifier, on_delete=models.CASCADE, related_name='messages')
+    msgtype = models.CharField(max_length=10, default=None)
     content = models.JSONField()
     created_at = models.BigIntegerField(help_text="UNIX tijd in milliseconden (UTC)")
     position = gis_models.PointField(geography=True, blank=True, null=True, srid=4326)
@@ -158,60 +162,3 @@ class Message(models.Model):
 
     def __str__(self):
         return f"Message for {self.tracker_identifier} at {self.created_at}"
-
-
-@receiver(post_save, sender=TrackerGroup)
-def create_or_update_sql_view(sender, instance: TrackerGroup, **kwargs):
-    group_id = instance.id
-    view_name = f"view_tracker_group_{group_id}".lower()
-    fields = instance.visible_fields
-
-    if not fields:
-        return
-
-    view_columns = ['id']
-    select_parts = ['tracker.id']
-
-    for field in fields:
-        if field == 'ais_dimensions':
-            select_parts.append(
-                "COALESCE(tracker.ais_length::text || 'm', '?') || ' x ' || COALESCE(tracker.ais_width::text || 'm', '?') AS ais_dimensions"
-            )
-            view_columns.append('ais_dimensions')
-        else:
-            select_parts.append(f"tracker.{field}")
-            view_columns.append(field)
-
-    select_clause = ', '.join(select_parts)
-    column_clause = ', '.join(view_columns)
-
-    # Basisfilter op group-koppeling
-    where_clause = f"tg.trackergroup_id = '{group_id}'"
-
-    # Extra geometrische filter, met expliciete typecasting naar geometry
-    if instance.area:
-        ewkt = instance.area.ewkt  # Bijvoorbeeld: SRID=4326;MULTIPOLYGON(...)
-        geom_filter = f"ST_Within(tracker.position::geometry, ST_GeomFromEWKT('{ewkt}'))"
-        where_clause = f"{where_clause} AND {geom_filter}"
-
-    sql_drop = f"DROP VIEW IF EXISTS {view_name};"
-    sql_create = f"""
-    CREATE VIEW {view_name} ({column_clause}) AS
-    SELECT {select_clause}
-    FROM {Tracker._meta.db_table} AS tracker
-    INNER JOIN {Tracker.groups.through._meta.db_table} AS tg
-        ON tracker.id = tg.tracker_id
-    WHERE {where_clause};
-    """
-    print(sql_create)
-    with connection.cursor() as cursor:
-        cursor.execute(sql_drop)
-        cursor.execute(sql_create)
-
-
-@receiver(post_delete, sender=TrackerGroup)
-def drop_sql_view_on_delete(sender, instance: TrackerGroup, **kwargs):
-    view_name = f"view_tracker_group_{instance.id}".lower()
-    sql = f"DROP VIEW IF EXISTS {view_name};"
-    with connection.cursor() as cursor:
-        cursor.execute(sql)
