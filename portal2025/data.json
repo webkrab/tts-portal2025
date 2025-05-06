@@ -1,0 +1,20 @@
+{
+    "ais4": {
+        "position_timestamp": 1744225449000,
+        "data": {
+            "ais4": {
+                "msg_type": 4,
+                "repeat": 0,
+                "mmsi": 2288231,
+                "year": 2025,
+                "month": 4,
+                "day": 9,
+                "hour": 19,
+                "minute": 4,
+                "second": 9,
+                "accuracy": true,
+                "lon": 9.1782,
+                "lat": 41.373988,
+                "epfd": 1,
+                "epfd_txt": "GPS",
+                "spare_1": 

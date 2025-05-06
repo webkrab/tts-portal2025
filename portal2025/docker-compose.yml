@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgis/postgis:latest
+    container_name: TTS_DJANGO_DB
+    environment:
+      POSTGRES_USER: ${DJANGO_DB_USER}
+      POSTGRES_PASSWORD: ${DJANGO_DB_PASSWORD}
+      POSTGRES_DB: ${DJANGO_DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5335:5432"
+    networks:
+      - tts-network-django
+
+  emqx:
+    image: emqx/emqx:latest
+    container_name: TTS_EMQX
+    ports:
+      - "1883:1883"     # MQTT protocol
+      - "8883:8883"     # MQTT over SSL (optioneel)
+      - "8083:8083"     # MQTT over WebSocket
+      - "18083:18083"   # EMQX Dashboard (webinterface)
+    environment:
+      - EMQX_NAME=emqx
+      - EMQX_HOST=127.0.0.1
+    networks:
+      - tts-network-django
+
+  web:
+    build: .
+    container_name: TTS_DJANGO_WEB
+    command: >
+      bash -c "wait-for-it db:5432 --timeout=30 -- bash -c 'wait-for-it emqx:18083 --timeout=30 -- python manage.py makemigrations --noinput &&
+               python manage.py migrate --noinput &&
+               python manage.py runserver 0.0.0.0:8000'"
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - emqx  # Wacht op zowel db als emqx
+    environment:
+      - DJANGO_DB_USER=${DJANGO_DB_USER}
+      - DJANGO_DB_PASSWORD=${DJANGO_DB_PASSWORD}
+      - DJANGO_DB_NAME=${DJANGO_DB_NAME}
+      - DJANGO_DB_HOST=${DJANGO_DB_HOST}
+      - DJANGO_DB_PORT=${DJANGO_DB_PORT}
+    networks:
+      - tts-network-django
+
+volumes:
+  postgres_data:
+
+networks:
+  tts-network-django:
+    driver: bridge

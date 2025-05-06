@@ -1,0 +1,102 @@
+2025-05-02 12:56:07,471 - WARNING - api.util_ais_nmea/util_ais_nmea.py:280 - [subscribe] - Subscriber gestart op topic: ais/+/nmea
+2025-05-02 12:57:09,890 - WARNING - api.util_ais_nmea/util_ais_nmea.py:280 - [subscribe] - Subscriber gestart op topic: ais/+/nmea
+2025-05-02 12:58:04,197 - WARNING - api.util_ais_nmea/util_ais_nmea.py:279 - [subscribe] - Subscriber gestart op topic: ais/+/nmea
+2025-05-02 12:59:42,646 - WARNING - api.util_ais_nmea/util_ais_nmea.py:280 - [subscribe] - Subscriber gestart op topic: ais/+/nmea
+2025-05-02 13:01:03,554 - WARNING - api.util_ais_nmea/util_ais_nmea.py:282 - [subscribe] - Subscriber gestart op topic: ais/+/nmea
+2025-05-02 13:01:11,802 - WARNING - api.util_ais_nmea/util_ais_nmea.py:283 - [subscribe] - Subscriber gestart op topic: ais/+/nmea
+2025-05-02 13:01:22,534 - WARNING - api.util_ais_nmea/util_ais_nmea.py:283 - [subscribe] - Subscriber gestart op topic: ais/+/nmea
+2025-05-02 13:04:09,460 - WARNING - api.util_ais_nmea/util_ais_nmea.py:295 - [subscribe] - Subscriber gestart op topic: ais/+/nmea
+2025-05-02 13:05:21,189 - WARNING - api.util_ais_nmea/util_ais_nmea.py:295 - [subscribe] - Subscriber gestart op topic: ais/+/nmea
+2025-05-02 13:09:06,287 - DEBUG - utils.mqtt/mqtt.py:17 - [<module>] - Zoek MQTT broker op TTS_EMQX:1883
+2025-05-02 13:09:06,537 - INFO - api.util_ais_nmea/util_ais_nmea.py:26 - [start] - NMEA start() aangeroepen
+2025-05-02 13:09:06,768 - INFO - utils.mqtt/mqtt.py:169 - [start_subscriber] - [proces:ais-nmea_decoder] Probeer verbinding met broker: TTS_EMQX:1883
+2025-05-02 13:09:06,994 - INFO - utils.mqtt/mqtt.py:186 - [start_subscriber] - [proces:ais-nmea_decoder_003f6952] Geabonneerd op ais/+/nmea
+2025-05-02 13:09:06,995 - INFO - utils.mqtt/mqtt.py:44 - [on_connect] - [proces:ais-nmea_decoder_003f6952] Verbonden met MQTT Broker
+2025-05-02 13:09:07,215 - WARNING - api.util_ais_nmea/util_ais_nmea.py:295 - [subscribe] - Subscriber gestart op topic: ais/+/nmea
+2025-05-02 13:09:07,493 - INFO - api.util_ais_nmea/util_ais_nmea.py:29 - [start] - MQTT subscribe gestart
+2025-05-02 13:09:07,698 - INFO - api.util_ais_nmea/util_ais_nmea.py:50 - [connect] - connect() wordt uitgevoerd
+2025-05-02 13:09:07,877 - INFO - api.util_ais_nmea/util_ais_nmea.py:105 - [connect] - Start UDP en TCP servers...
+2025-05-02 13:09:08,053 - INFO - api.util_ais_nmea/util_ais_nmea.py:56 - [handle_udp] - UDP server in:ais-nmea_nl-deurne luistert op 0.0.0.0:6201
+2025-05-02 13:09:08,054 - INFO - api.util_ais_nmea/util_ais_nmea.py:69 - [handle_tcp] - TCP server in:ais-nmea_nl-deurne luistert op 0.0.0.0:6201
+2025-05-02 13:09:08,054 - INFO - api.util_ais_nmea/util_ais_nmea.py:108 - [connect] - AIS-NMEA server in:ais-nmea_nl-deurne gestart op 0.0.0.0:6201 voor zowel TCP als UDP
+2025-05-02 13:10:24,392 - DEBUG - utils.mqtt/mqtt.py:17 - [<module>] - Zoek MQTT broker op TTS_EMQX:1883
+2025-05-02 13:10:24,576 - INFO - utils.mqtt/mqtt.py:169 - [start_subscriber] - [proces:ais-nmea_decoder] Probeer verbinding met broker: TTS_EMQX:1883
+2025-05-02 13:10:24,756 - INFO - utils.mqtt/mqtt.py:186 - [start_subscriber] - [proces:ais-nmea_decoder_a9ff0ea9] Geabonneerd op ais/+/nmea
+2025-05-02 13:10:24,756 - INFO - utils.mqtt/mqtt.py:44 - [on_connect] - [proces:ais-nmea_decoder_a9ff0ea9] Verbonden met MQTT Broker
+2025-05-02 13:10:24,933 - WARNING - api.util_ais_nmea/util_ais_nmea.py:292 - [subscribe] - Subscriber gestart op topic: ais/+/nmea
+2025-05-02 13:10:25,110 - INFO - api.util_ais_nmea/util_ais_nmea.py:102 - [connect] - Start UDP en TCP servers...
+2025-05-02 13:10:25,303 - DEBUG - api.util_ais_nmea/util_ais_nmea.py:66 - [handle_tcp] - TCP server in:ais-nmea_nl-deurne luistert op 0.0.0.0:6201
+2025-05-02 13:10:25,303 - DEBUG - api.util_ais_nmea/util_ais_nmea.py:53 - [handle_udp] - UDP server in:ais-nmea_nl-deurne luistert op 0.0.0.0:6201
+2025-05-02 13:10:25,303 - INFO - api.util_ais_nmea/util_ais_nmea.py:105 - [connect] - AIS-NMEA server in:ais-nmea_nl-deurne gestart op 0.0.0.0:6201 voor zowel TCP als UDP
+2025-05-02 13:10:30,727 - DEBUG - utils.mqtt/mqtt.py:17 - [<module>] - Zoek MQTT broker op TTS_EMQX:1883
+2025-05-02 13:10:31,015 - INFO - utils.mqtt/mqtt.py:169 - [start_subscriber] - [proces:ais-nmea_decoder] Probeer verbinding met broker: TTS_EMQX:1883
+2025-05-02 13:10:31,399 - INFO - utils.mqtt/mqtt.py:186 - [start_subscriber] - [proces:ais-nmea_decoder_3755efa5] Geabonneerd op ais/+/nmea
+2025-05-02 13:10:31,400 - INFO - utils.mqtt/mqtt.py:44 - [on_connect] - [proces:ais-nmea_decoder_3755efa5] Verbonden met MQTT Broker
+2025-05-02 13:10:31,636 - WARNING - api.util_ais_nmea/util_ais_nmea.py:292 - [subscribe] - Subscriber gestart op topic: ais/+/nmea
+2025-05-02 13:10:31,873 - INFO - api.util_ais_nmea/util_ais_nmea.py:102 - [connect] - Start UDP en TCP servers...
+2025-05-02 13:10:32,067 - DEBUG - api.util_ais_nmea/util_ais_nmea.py:53 - [handle_udp] - UDP server in:ais-nmea_nl-deurne luistert op 0.0.0.0:6201
+2025-05-02 13:10:32,067 - DEBUG - api.util_ais_nmea/util_ais_nmea.py:66 - [handle_tcp] - TCP server in:ais-nmea_nl-deurne luistert op 0.0.0.0:6201
+2025-05-02 13:10:32,067 - INFO - api.util_ais_nmea/util_ais_nmea.py:105 - [connect] - in:ais-nmea_nl-deurne gestart op 0.0.0.0:6201 voor zowel TCP als UDP
+2025-05-02 13:10:53,768 - DEBUG - utils.mqtt/mqtt.py:17 - [<module>] - Zoek MQTT broker op TTS_EMQX:1883
+2025-05-02 13:10:53,996 - INFO - utils.mqtt/mqtt.py:169 - [start_subscriber] - [proces:ais-nmea_decoder] Probeer verbinding met broker: TTS_EMQX:1883
+2025-05-02 13:10:54,200 - INFO - utils.mqtt/mqtt.py:186 - [start_subscriber] - [proces:ais-nmea_decoder_7b2623fb] Geabonneerd op ais/+/nmea
+2025-05-02 13:10:54,200 - INFO - utils.mqtt/mqtt.py:44 - [on_connect] - [proces:ais-nmea_decoder_7b2623fb] Verbonden met MQTT Broker
+2025-05-02 13:10:54,427 - WARNING - api.util_ais_nmea/util_ais_nmea.py:292 - [subscribe] - Subscriber gestart op topic: ais/+/nmea
+2025-05-02 13:10:54,618 - INFO - api.util_ais_nmea/util_ais_nmea.py:102 - [connect] - Start UDP en TCP servers...
+2025-05-02 13:10:54,970 - DEBUG - api.util_ais_nmea/util_ais_nmea.py:53 - [handle_udp] - UDP server in:ais-nmea_nl-deurne luistert op 0.0.0.0:6201
+2025-05-02 13:10:54,970 - DEBUG - api.util_ais_nmea/util_ais_nmea.py:66 - [handle_tcp] - TCP server in:ais-nmea_nl-deurne luistert op 0.0.0.0:6201
+2025-05-02 13:10:54,971 - INFO - api.util_ais_nmea/util_ais_nmea.py:105 - [connect] - Connection in:ais-nmea_nl-deurne gestart op 0.0.0.0:6201 voor zowel TCP als UDP
+2025-05-02 13:11:09,376 - DEBUG - utils.mqtt/mqtt.py:17 - [<module>] - Zoek MQTT broker op TTS_EMQX:1883
+2025-05-02 13:11:09,708 - INFO - utils.mqtt/mqtt.py:169 - [start_subscriber] - [proces:ais-nmea_decoder] Probeer verbinding met broker: TTS_EMQX:1883
+2025-05-02 13:11:10,020 - INFO - utils.mqtt/mqtt.py:186 - [start_subscriber] - [proces:ais-nmea_decoder_5c0fc0dc] Geabonneerd op ais/+/nmea
+2025-05-02 13:11:10,020 - INFO - utils.mqtt/mqtt.py:44 - [on_connect] - [proces:ais-nmea_decoder_5c0fc0dc] Verbonden met MQTT Broker
+2025-05-02 13:11:10,258 - WARNING - api.util_ais_nmea/util_ais_nmea.py:292 - [subscribe] - Subscriber gestart op topic: ais/+/nmea
+2025-05-02 13:11:10,443 - INFO - api.util_ais_nmea/util_ais_nmea.py:102 - [connect] - Start UDP en TCP servers...
+2025-05-02 13:11:10,708 - DEBUG - api.util_ais_nmea/util_ais_nmea.py:53 - [handle_udp] - UDP server in:ais-nmea_nl-deurne luistert op 0.0.0.0:6201
+2025-05-02 13:11:10,708 - DEBUG - api.util_ais_nmea/util_ais_nmea.py:66 - [handle_tcp] - TCP server in:ais-nmea_nl-deurne luistert op 0.0.0.0:6201
+2025-05-02 13:11:10,708 - INFO - api.util_ais_nmea/util_ais_nmea.py:105 - [connect] - Connection [in:ais-nmea_nl-deurne] gestart op 0.0.0.0:6201 voor zowel TCP als UDP
+2025-05-02 13:11:15,220 - DEBUG - utils.mqtt/mqtt.py:17 - [<module>] - Zoek MQTT broker op TTS_EMQX:1883
+2025-05-02 13:11:15,543 - INFO - utils.mqtt/mqtt.py:169 - [start_subscriber] - [proces:ais-nmea_decoder] Probeer verbinding met broker: TTS_EMQX:1883
+2025-05-02 13:11:15,801 - INFO - utils.mqtt/mqtt.py:186 - [start_subscriber] - [proces:ais-nmea_decoder_fdb409b0] Geabonneerd op ais/+/nmea
+2025-05-02 13:11:15,801 - INFO - utils.mqtt/mqtt.py:44 - [on_connect] - [proces:ais-nmea_decoder_fdb409b0] Verbonden met MQTT Broker
+2025-05-02 13:11:15,996 - WARNING - api.util_ais_nmea/util_ais_nmea.py:292 - [subscribe] - Subscriber gestart op topic: ais/+/nmea
+2025-05-02 13:11:16,193 - INFO - api.util_ais_nmea/util_ais_nmea.py:102 - [connect] - Start UDP en TCP servers...
+2025-05-02 13:11:16,411 - DEBUG - api.util_ais_nmea/util_ais_nmea.py:53 - [handle_udp] - UDP server in:ais-nmea_nl-deurne luistert op 0.0.0.0:6201
+2025-05-02 13:11:16,412 - DEBUG - api.util_ais_nmea/util_ais_nmea.py:66 - [handle_tcp] - TCP server in:ais-nmea_nl-deurne luistert op 0.0.0.0:6201
+2025-05-02 13:11:16,412 - INFO - api.util_ais_nmea/util_ais_nmea.py:105 - [connect] - Connection [in:ais-nmea_nl-deurne] gestart op [0.0.0.0:6201] voor zowel TCP als UDP
+2025-05-02 13:14:23,227 - DEBUG - utils.mqtt/mqtt.py:17 - [<module>] - Zoek MQTT broker op TTS_EMQX:1883
+2025-05-02 13:14:23,431 - INFO - utils.mqtt/mqtt.py:169 - [start_subscriber] - [proces:ais-nmea_decoder] Probeer verbinding met broker: TTS_EMQX:1883
+2025-05-02 13:14:23,638 - INFO - utils.mqtt/mqtt.py:186 - [start_subscriber] - [proces:ais-nmea_decoder_e675a86e] Geabonneerd op ais/+/nmea
+2025-05-02 13:14:23,639 - INFO - utils.mqtt/mqtt.py:44 - [on_connect] - [proces:ais-nmea_decoder_e675a86e] Verbonden met MQTT Broker
+2025-05-02 13:14:23,867 - WARNING - api.util_ais_nmea/util_ais_nmea.py:290 - [subscribe] - Subscriber gestart op topic: ais/+/nmea
+2025-05-02 13:14:24,438 - INFO - api.util_ais_nmea/util_ais_nmea.py:102 - [connect] - Start UDP en TCP voor [[in:ais-nmea_nl-deurne]...
+2025-05-02 13:14:24,654 - DEBUG - api.util_ais_nmea/util_ais_nmea.py:53 - [handle_udp] - UDP server in:ais-nmea_nl-deurne luistert op 0.0.0.0:6201
+2025-05-02 13:14:24,654 - INFO - api.util_ais_nmea/util_ais_nmea.py:105 - [connect] - Connection [in:ais-nmea_nl-deurne] gestart op [0.0.0.0:6201] voor zowel TCP als UDP
+2025-05-02 13:14:24,654 - DEBUG - api.util_ais_nmea/util_ais_nmea.py:66 - [handle_tcp] - TCP server in:ais-nmea_nl-deurne luistert op 0.0.0.0:6201
+2025-05-02 13:15:03,125 - DEBUG - utils.mqtt/mqtt.py:17 - [<module>] - Zoek MQTT broker op TTS_EMQX:1883
+2025-05-02 13:15:03,406 - INFO - utils.mqtt/mqtt.py:169 - [start_subscriber] - [proces:ais-nmea_decoder] Probeer verbinding met broker: TTS_EMQX:1883
+2025-05-02 13:15:03,657 - INFO - utils.mqtt/mqtt.py:186 - [start_subscriber] - [proces:ais-nmea_decoder_ebf48372] Geabonneerd op ais/+/nmea
+2025-05-02 13:15:03,657 - INFO - utils.mqtt/mqtt.py:44 - [on_connect] - [proces:ais-nmea_decoder_ebf48372] Verbonden met MQTT Broker
+2025-05-02 13:15:03,836 - WARNING - api.util_ais_nmea/util_ais_nmea.py:290 - [subscribe] - Subscriber gestart op topic: ais/+/nmea
+2025-05-02 13:15:04,337 - INFO - api.util_ais_nmea/util_ais_nmea.py:102 - [connect] - Start UDP en TCP voor [[in:ais-nmea_nl-deurne]...
+2025-05-02 13:15:04,543 - DEBUG - api.util_ais_nmea/util_ais_nmea.py:53 - [handle_udp] - UDP server in:ais-nmea_nl-deurne luistert op 0.0.0.0:6201
+2025-05-02 13:15:04,543 - DEBUG - api.util_ais_nmea/util_ais_nmea.py:66 - [handle_tcp] - TCP server in:ais-nmea_nl-deurne luistert op 0.0.0.0:6201
+2025-05-02 13:15:04,543 - INFO - api.util_ais_nmea/util_ais_nmea.py:105 - [connect] - Connection [in:ais-nmea_nl-deurne] gestart op [0.0.0.0:6201] voor zowel TCP als UDP
+2025-05-02 13:44:13,550 - DEBUG - utils.mqtt/mqtt.py:17 - [<module>] - Zoek MQTT broker op TTS_EMQX:1883
+2025-05-02 13:44:13,936 - INFO - utils.mqtt/mqtt.py:169 - [start_subscriber] - [proces:ais-nmea_decoder] Probeer verbinding met broker: TTS_EMQX:1883
+2025-05-02 13:44:14,286 - INFO - utils.mqtt/mqtt.py:186 - [start_subscriber] - [proces:ais-nmea_decoder_b8b5f40a] Geabonneerd op ais/+/nmea
+2025-05-02 13:44:14,286 - INFO - utils.mqtt/mqtt.py:44 - [on_connect] - [proces:ais-nmea_decoder_b8b5f40a] Verbonden met MQTT Broker
+2025-05-02 13:44:14,555 - WARNING - api.util_ais_nmea/util_ais_nmea.py:287 - [subscribe] - Subscriber gestart op topic: ais/+/nmea
+2025-05-02 13:44:15,139 - INFO - api.util_ais_nmea/util_ais_nmea.py:102 - [connect] - Start UDP en TCP voor [[in:ais-nmea_nl-deurne]...
+2025-05-02 13:44:15,348 - DEBUG - api.util_ais_nmea/util_ais_nmea.py:53 - [handle_udp] - UDP server in:ais-nmea_nl-deurne luistert op 0.0.0.0:6201
+2025-05-02 13:44:15,348 - DEBUG - api.util_ais_nmea/util_ais_nmea.py:66 - [handle_tcp] - TCP server in:ais-nmea_nl-deurne luistert op 0.0.0.0:6201
+2025-05-02 13:44:15,348 - INFO - api.util_ais_nmea/util_ais_nmea.py:105 - [connect] - Connection [in:ais-nmea_nl-deurne] gestart op [0.0.0.0:6201] voor zowel TCP als UDP
+2025-05-02 14:09:11,356 - DEBUG - utils.mqtt/mqtt.py:17 - [<module>] - Zoek MQTT broker op TTS_EMQX:1883
+2025-05-02 14:09:11,557 - INFO - utils.mqtt/mqtt.py:169 - [start_subscriber] - [proces:ais-nmea_decoder] Probeer verbinding met broker: TTS_EMQX:1883
+2025-05-02 14:09:11,733 - INFO - utils.mqtt/mqtt.py:186 - [start_subscriber] - [proces:ais-nmea_decoder_38bf7429] Geabonneerd op ais/+/nmea
+2025-05-02 14:09:11,733 - INFO - utils.mqtt/mqtt.py:44 - [on_connect] - [proces:ais-nmea_decoder_38bf7429] Verbonden met MQTT Broker
+2025-05-02 14:09:11,921 - WARNING - api.util_ais_nmea/util_ais_nmea.py:287 - [subscribe] - Subscriber gestart op topic: ais/+/nmea
+2025-05-02 14:09:12,353 - INFO - api.util_ais_nmea/util_ais_nmea.py:102 - [connect] - Start UDP en TCP voor [[in:ais-nmea_nl-deurne]...
+2025-05-02 14:09:12,540 - DEBUG - api.util_ais_nmea/util_ais_nmea.py:53 - [handle_udp] - UDP server in:ais-nmea_nl-deurne luistert op 0.0.0.0:6201
+2025-05-02 14:09:12,540 - INFO - api.util_ais_nmea/util_ais_nmea.py:105 - [connect] - Connection [in:ais-nmea_nl-deurne] gestart op [0.0.0.0:6201] voor zowel TCP als UDP
+2025-05-02 14:09:12,540 - DEBUG - api.util_ais_nmea/util_ais_nmea.py:66 - [handle_tcp] - TCP server in:ais-nmea_nl-deurne luistert op 0.0.0.0:6201
