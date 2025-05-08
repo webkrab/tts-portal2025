@@ -3,6 +3,8 @@
 import os
 import sys
 
+import warnings
+warnings.simplefilter('always')
 
 def main():
     """Run administrative tasks."""

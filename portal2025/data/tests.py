@@ -1,6 +1,6 @@
 # tests.py
 from django.test import TestCase
-from data.models import Tracker, TrackerGroup, TrackerIdentifier, TrackerIdentifierType
+from gpstracking.models import Tracker, TrackerGroup, TrackerIdentifier, TrackerIdentifierType
 
 def debug_tracker_state(tracker):
     print(f"\n=== Tracker: {tracker.screen_name} ===")

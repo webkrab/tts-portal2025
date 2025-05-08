@@ -15,14 +15,14 @@ admin.site.site_title = "TTS Beheerportal"
 
 class TrackerGroupAdminForm(forms.ModelForm):
     visible_fields = forms.MultipleChoiceField(
-        choices=get_tracker_field_choices(),
-        required=False,
-        widget=forms.CheckboxSelectMultiple
+            choices=get_tracker_field_choices(),
+            required=False,
+            widget=forms.CheckboxSelectMultiple
     )
     identifier_types = forms.ModelMultipleChoiceField(
-        queryset=TrackerIdentifierType.objects.all(),
-        required=False,
-        widget=forms.CheckboxSelectMultiple
+            queryset=TrackerIdentifierType.objects.all(),
+            required=False,
+            widget=forms.CheckboxSelectMultiple
     )
 
     class Meta:
@@ -32,9 +32,9 @@ class TrackerGroupAdminForm(forms.ModelForm):
 
 class TrackerIdentifierTypeAdminForm(forms.ModelForm):
     groups = forms.ModelMultipleChoiceField(
-        queryset=TrackerGroup.objects.all(),
-        required=False,
-        widget=forms.CheckboxSelectMultiple
+            queryset=TrackerGroup.objects.all(),
+            required=False,
+            widget=forms.CheckboxSelectMultiple
     )
 
     class Meta:
@@ -103,11 +103,11 @@ class TrackerInline(admin.TabularInline):
         type_ids = group.identifier_types.values_list('id', flat=True)
 
         matching_types = tracker.identifiers.filter(
-            identifier_type_id__in=type_ids
+                identifier_type_id__in=type_ids
         ).values_list('identifier_type__name', flat=True).distinct()
 
         if matching_types:
-            return "Via " + ", ".join(matching_types)
+            return "Via Identifier(s):" + ", ".join(matching_types)
 
         return "Direct"
 
@@ -138,18 +138,18 @@ for identifier_type in types:
 
 @admin.register(Tracker)
 class TrackerAdmin(LeafletGeoAdmin):
-    list_display = ['screen_name', 'icon'] + identifier_column_names + ['id']
+    list_display = ['screen_name', 'icon'] + identifier_column_names
     search_fields = (
         'screen_name',
         'ais_name',
         'adsb_registration',
         'identifiers__external_id',
-        'identifiers__identifier_type__name',
+        'identifiers__identifier_type',
     )
-    list_filter = ('groups',)
+    list_filter = ('identifiers__identifier_type', 'groups')
+    filter_horizontal = ('groups',)  # ✅ HIER opnieuw toegevoegd
     inlines = [TrackerIdentifierInline]
-    filter_horizontal = ('groups',)
-    readonly_fields = ('inferred_group_list',)
+    readonly_fields = ('inferred_group_list', 'position_timestamp_display')
 
     def inferred_group_list(self, obj):
         groups = TrackerGroup.objects.filter(
@@ -157,14 +157,22 @@ class TrackerAdmin(LeafletGeoAdmin):
         ).distinct()
         return ", ".join(g.name for g in groups)
 
-    inferred_group_list.short_description = "Indirect gekoppelde groepen"
+    inferred_group_list.short_description = "Indirect Linked Groups"
+
+    def position_timestamp_display(self, obj):
+        return obj.position_timestamp_display
+
+    position_timestamp_display.short_description = "Position_time"
+    position_timestamp_display.admin_order_field = 'position_timestamp'
+
 
 
 
 @admin.register(TrackerIdentifier)
 class TrackerIdentifierAdmin(admin.ModelAdmin):
-    list_display = ('identifier_type', 'external_id', 'identkey', 'tracker')
+    list_display = ( 'tracker', 'identifier_type__name', 'external_id',)
     search_fields = ('identifier_type__name', 'external_id', 'identkey')
+    list_filter = ('identifier_type__name',)
     readonly_fields = ('identkey',)
 
 
@@ -182,9 +190,18 @@ class TrackerIdentifierTypeAdmin(admin.ModelAdmin):
     search_fields = ('name',)
 
 
-@admin.register(Message)
-class MessageAdmin(LeafletGeoAdmin):
-    list_display = ('tracker_identifier', 'created_at', 'sha256_key')
-    search_fields = ('tracker_identifier__external_id', 'tracker_identifier__identifier_type__name')
-    list_filter = ('created_at',)
-    readonly_fields = ('sha256_key',)
+@admin.register(TrackerMessage)
+class TrackerMessageAdmin(LeafletGeoAdmin):
+    list_display = ('tracker_identifier', 'created_at_display', 'msgtype', 'sha256_key')
+    search_fields = (
+        'tracker_identifier__external_id',
+        'tracker_identifier__tracker__screen_name',
+    )
+    list_filter = ('tracker_identifier', 'msgtype')
+    readonly_fields = ('sha256_key', 'created_at_display')
+
+    def created_at_display(self, obj):
+        return obj.created_at_display
+
+    created_at_display.short_description = "Ontvangen"
+    created_at_display.admin_order_field = 'created_at'

@@ -8,6 +8,7 @@ from django.db import models
 from django.db.models.signals import post_delete, m2m_changed
 from django.dispatch import receiver
 from django.core.validators import MinValueValidator, MaxValueValidator
+from datetime import datetime, timezone
 
 
 def get_tracker_field_choices():
@@ -23,7 +24,7 @@ class TrackerIdentifierType(models.Model):
     description = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
-        return f"{self.name} - {self.description or ''}".strip()
+        return f"{self.name}"
 
 
 class TrackerGroup(models.Model):
@@ -68,6 +69,13 @@ class Tracker(models.Model):
 
     groups = models.ManyToManyField(TrackerGroup, related_name='trackers', blank=True)
 
+    @property
+    def position_timestamp_display(self):
+        if self.position_timestamp:
+            dt = datetime.fromtimestamp(self.position_timestamp / 1000, tz=timezone.utc)
+            return dt.isoformat(sep=' ', timespec='seconds')
+        return "-"
+
     def __str__(self):
         return self.screen_name
 
@@ -102,7 +110,7 @@ class TrackerIdentifier(models.Model):
             self.tracker.groups.add(*self.identifier_type.groups.all())
 
     def __str__(self):
-        return f"{self.identifier_type.name}: {self.external_id}"
+        return f"{self.identifier_type.name}: {self.external_id} | {self.tracker.screen_name}"
 
 
 @receiver(post_delete, sender=TrackerIdentifier)
@@ -146,13 +154,20 @@ def sync_trackers_on_identifiertype_change(sender, instance, action, pk_set, **k
                     tracker.groups.remove(instance)
 
 
-class Message(models.Model):
+class TrackerMessage(models.Model):
     tracker_identifier = models.ForeignKey(TrackerIdentifier, on_delete=models.CASCADE, related_name='messages')
     msgtype = models.CharField(max_length=10, default=None)
     content = models.JSONField()
     created_at = models.BigIntegerField(help_text="UNIX tijd in milliseconden (UTC)")
     position = gis_models.PointField(geography=True, blank=True, null=True, srid=4326)
     sha256_key = models.CharField(max_length=64, blank=True, null=True, unique=True)
+
+    @property
+    def created_at_display(self):
+        if self.created_at:
+            dt = datetime.fromtimestamp(self.created_at / 1000, tz=timezone.utc)
+            return dt.isoformat(sep=' ', timespec='seconds')
+        return "-"
 
     def save(self, *args, **kwargs):
         if not self.sha256_key and self.content:

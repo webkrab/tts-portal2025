@@ -18,6 +18,8 @@ import time
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+env = environ.Env()
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
@@ -26,8 +28,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-i+pnk&-e6nmo6d5q+01&2y2@zhs)r4$pobxs728ae_m^nz%0i7'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
+DEBUG = env.bool('DJANGO_DEBUG')
 ALLOWED_HOSTS = ['*']
 
 
@@ -45,8 +46,8 @@ INSTALLED_APPS = [
     'leaflet',
 
     'utils',
-    'api',
-    'data'
+    # 'api',
+    'gpstracking'
 ]
 
 MIDDLEWARE = [
@@ -87,9 +88,6 @@ WSGI_APPLICATION = 'core.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
-env = environ.Env()
-environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 DATABASES = {
     'default': {
