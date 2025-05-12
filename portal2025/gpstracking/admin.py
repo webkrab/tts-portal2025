@@ -1,15 +1,19 @@
+
 from django.contrib import admin
 from django import forms
 from django.forms import Select
 from leaflet.admin import LeafletGeoAdmin
 from django.utils.text import slugify
+from django.core.exceptions import ValidationError
 
-from .models import *
+from .models import (
+    Tracker, TrackerGroup, TrackerIdentifier, TrackerIdentifierType, TrackerMessage,
+    get_tracker_field_choices
+)
 
 # Helemaal onderaan je admin.py
 admin.site.site_header = "TTS Beheer"
 admin.site.site_title = "TTS Beheerportal"
-
 
 # --------- FORMULIEREN --------- #
 
@@ -32,35 +36,7 @@ class TrackerGroupAdminForm(forms.ModelForm):
         fields = '__all__'
 
 
-    visible_fields = forms.MultipleChoiceField(
-            choices=get_tracker_field_choices(),
-            required=False,
-            widget=forms.CheckboxSelectMultiple
-    )
-    identifier_types = forms.ModelMultipleChoiceField(queryset=TrackerIdentifierType.objects.none(),
-            required=False,
-            widget=forms.CheckboxSelectMultiple
-    )
-
-    class Meta:
-        model = TrackerGroup
-        fields = '__all__'
-
-
 class TrackerIdentifierTypeAdminForm(forms.ModelForm):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['groups'].queryset = TrackerGroup.objects.all()
-
-    groups = forms.ModelMultipleChoiceField(queryset=TrackerGroup.objects.none(),
-            required=False,
-            widget=forms.CheckboxSelectMultiple
-    )
-
-    class Meta:
-        model = TrackerIdentifierType
-        fields = '__all__'
-
     def __init__(self, *args, **kwargs):
         instance = kwargs.get('instance')
         initial = kwargs.get('initial', {})
@@ -68,6 +44,15 @@ class TrackerIdentifierTypeAdminForm(forms.ModelForm):
             initial['groups'] = instance.groups.all()
         kwargs['initial'] = initial
         super().__init__(*args, **kwargs)
+        self.fields['groups'] = forms.ModelMultipleChoiceField(
+            queryset=TrackerGroup.objects.all(),
+            required=False,
+            widget=forms.CheckboxSelectMultiple
+        )
+
+    class Meta:
+        model = TrackerIdentifierType
+        fields = '__all__'
 
     def save(self, commit=True):
         instance = super().save(commit=False)
@@ -85,15 +70,55 @@ class TrackerIdentifierInlineForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
         if self.instance and self.instance.pk:
             self.fields['identifier_type'].disabled = True
 
-        self.fields['identifier_type'].widget.can_add_related = False
-        self.fields['identifier_type'].widget.can_change_related = False
-        self.fields['identifier_type'].widget.can_view_related = False
-        self.fields['identifier_type'].widget.can_delete_related = False
+        for attr in ['can_add_related', 'can_change_related', 'can_view_related', 'can_delete_related']:
+            setattr(self.fields['identifier_type'].widget, attr, False)
 
+    def clean(self):
+        cleaned_data = super().clean()
+        identifier_type = cleaned_data.get("identifier_type")
+        external_id = cleaned_data.get("external_id")
+
+        if identifier_type and external_id:
+            identkey = f"{identifier_type.name}_{external_id}".upper()
+
+            qs = TrackerIdentifier.objects.filter(identkey=identkey)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+
+            if qs.exists():
+                raise ValidationError({
+                    "external_id": f"De combinatie van type '{identifier_type.name}' en ID '{external_id}' bestaat al."
+                })
+
+        return cleaned_data
+
+
+class TrackerIdentifierAdminForm(forms.ModelForm):
+    class Meta:
+        model = TrackerIdentifier
+        fields = '__all__'
+
+    def clean(self):
+        cleaned_data = super().clean()
+        identifier_type = cleaned_data.get("identifier_type")
+        external_id = cleaned_data.get("external_id")
+
+        if identifier_type and external_id:
+            identkey = f"{identifier_type.name}_{external_id}".upper()
+
+            qs = TrackerIdentifier.objects.filter(identkey=identkey)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+
+            if qs.exists():
+                raise ValidationError({
+                    "external_id": f"De combinatie van type '{identifier_type.name}' en ID '{external_id}' bestaat al."
+                })
+
+        return cleaned_data
 
 # --------- INLINES --------- #
 
@@ -121,44 +146,16 @@ class TrackerInline(admin.TabularInline):
         tracker = obj.tracker
         group = obj.trackergroup
         type_ids = group.identifier_types.values_list('id', flat=True)
-
         matching_types = tracker.identifiers.filter(
-                identifier_type_id__in=type_ids
+            identifier_type_id__in=type_ids
         ).values_list('identifier_type__name', flat=True).distinct()
-
-        if matching_types:
-            return "Via Identifier(s):" + ", ".join(matching_types)
-
-        return "Direct"
+        return "Via Identifier(s): " + ", ".join(matching_types) if matching_types else "Direct"
 
 
-# --------- DYNAMISCHE IDENTIFIER-KOLOMMEN --------- #
-
-identifier_column_names = []
-types = TrackerIdentifierType.objects.all()
-
-
-def make_identifier_column(itype):
-    def col_func(self, obj):
-        identifiers = obj.identifiers.filter(identifier_type=itype)
-        return ", ".join(i.external_id for i in identifiers)
-
-    col_func.short_description = itype.name
-    col_func.__name__ = f'identifier_{slugify(itype.name)}'
-    return col_func
-
-
-for identifier_type in types:
-    func = make_identifier_column(identifier_type)
-    setattr(admin.ModelAdmin, func.__name__, func)
-    identifier_column_names.append(func.__name__)
-
-
-# --------- ADMIN REGISTRATIE --------- #
+# --------- ADMIN CONFIG --------- #
 
 @admin.register(Tracker)
 class TrackerAdmin(LeafletGeoAdmin):
-    list_display = ['screen_name', 'icon'] + identifier_column_names
     search_fields = (
         'screen_name',
         'ais_name',
@@ -167,7 +164,7 @@ class TrackerAdmin(LeafletGeoAdmin):
         'identifiers__identifier_type',
     )
     list_filter = ('identifiers__identifier_type', 'groups')
-    filter_horizontal = ('groups',)  # ✅ HIER opnieuw toegevoegd
+    filter_horizontal = ('groups',)
     inlines = [TrackerIdentifierInline]
     readonly_fields = ('inferred_group_list', 'position_timestamp_display')
 
@@ -185,16 +182,35 @@ class TrackerAdmin(LeafletGeoAdmin):
     position_timestamp_display.short_description = "Position_time"
     position_timestamp_display.admin_order_field = 'position_timestamp'
 
+    def get_list_display(self, request):
+        columns = ['screen_name', 'icon']
+        types = TrackerIdentifierType.objects.all()
 
+        for itype in types:
+            column_name = f'identifier_{slugify(itype.name)}'
+
+            def make_func(itype):
+                def col(obj):
+                    identifiers = obj.identifiers.filter(identifier_type=itype)
+                    return ", ".join(i.external_id for i in identifiers)
+                col.short_description = itype.name
+                return col
+
+            if not hasattr(self, column_name):
+                setattr(self, column_name, make_func(itype))
+
+            columns.append(column_name)
+
+        return columns
 
 
 @admin.register(TrackerIdentifier)
 class TrackerIdentifierAdmin(admin.ModelAdmin):
-    list_display = ( 'tracker', 'identifier_type__name', 'external_id',)
+    form = TrackerIdentifierAdminForm
+    list_display = ('tracker', 'identifier_type', 'external_id',)
     search_fields = ('identifier_type__name', 'external_id', 'identkey')
     list_filter = ('identifier_type__name',)
     readonly_fields = ('identkey',)
-
 
 @admin.register(TrackerGroup)
 class TrackerGroupAdmin(LeafletGeoAdmin):
@@ -212,7 +228,7 @@ class TrackerIdentifierTypeAdmin(admin.ModelAdmin):
 
 @admin.register(TrackerMessage)
 class TrackerMessageAdmin(LeafletGeoAdmin):
-    list_display = ('tracker_identifier','tracker_identifier__tracker__screen_name', 'created_at_display', 'msgtype', 'sha256_key')
+    list_display = ('tracker_identifier', 'created_at_display', 'msgtype', 'sha256_key')
     search_fields = (
         'tracker_identifier__external_id',
         'tracker_identifier__tracker__screen_name',
@@ -225,3 +241,4 @@ class TrackerMessageAdmin(LeafletGeoAdmin):
 
     created_at_display.short_description = "Ontvangen om"
     created_at_display.admin_order_field = 'created_at'
+
