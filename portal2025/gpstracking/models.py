@@ -1,59 +1,99 @@
-import uuid
-from datetime import datetime, timezone, timedelta
 import time
+import uuid
+from datetime import datetime, timedelta, timezone
 
 from django.contrib.gis.db import models as gis_models
-from django.contrib.gis.geos import Polygon, MultiPolygon
+from django.contrib.gis.geos import MultiPolygon, Polygon
 from django.core.exceptions import ValidationError
-from django.utils.translation import gettext_lazy as _
-from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
+from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
+from django.db.models import UniqueConstraint
+from django.utils.translation import gettext_lazy as _
+
+
+
 
 def default_tracker_area():
+    """
+    Geeft een standaardgebied (grofweg Nederland) terug als MultiPolygon.
+
+    Returns:
+        MultiPolygon: Standaard geografisch gebied.
+    """
     min_lat = 50.475
     max_lat = 53.825
     min_lon = 2.850
     max_lon = 7.550
 
     polygon = Polygon((
-        (min_lon, min_lat),
-        (max_lon, min_lat),
-        (max_lon, max_lat),
-        (min_lon, max_lat),
-        (min_lon, min_lat),  # sluit de polygon
+            (min_lon, min_lat),
+            (max_lon, min_lat),
+            (max_lon, max_lat),
+            (min_lon, max_lat),
+            (min_lon, min_lat),
     ))
     return MultiPolygon(polygon, srid=4326)
 
+
 def get_tracker_field_choices():
+    """
+    Geeft een lijst van beschikbare veldnamen voor trackers, inclusief extra virtuele velden.
+
+    Returns:
+        List[Tuple[str, str]]: Keuzelijst met veldnamen.
+    """
     extra_fields = ["age_in_sec", "age_human", "ais_dimensions"]
     model_fields = [
-        (field.name, field.name)
-        for field in Tracker._meta.get_fields()
-        if isinstance(field, models.Field) and field.concrete and not field.auto_created
+            (field.name, field.name)
+            for field in Tracker._meta.get_fields()
+            if isinstance(field, models.Field) and field.concrete and not field.auto_created
     ]
     return model_fields + [(field, field) for field in extra_fields]
 
+
 def default_tracker_visible_fields():
+    """
+    Standaard zichtbare velden voor een tracker.
+
+    Returns:
+        List[str]: Lijst met veldnamen.
+    """
     return [
-        "id", "screen_name", "icon",
-        "altitude", "speed", "heading",
-        "position_timestamp", "position",
-        "age_in_sec", "age_human"
+            "id", "screen_name", "icon",
+            "altitude", "speed", "heading",
+            "position_timestamp", "position",
+            "age_in_sec", "age_human"
     ]
 
+
 class TrackerIdentifierType(models.Model):
-    name = models.CharField(max_length=50, unique=True)
+    """
+    Type identificatie (bijv. MMSI, ICAO) dat gekoppeld kan worden aan een tracker.
+    """
+    code = models.CharField(
+            max_length=10,
+            primary_key=True,
+            validators=[
+                    RegexValidator(
+                            r'^[A-Z0-9_]+$',
+                            'Alleen hoofdletters (A-Z), cijfers (0-9) en underscores (_) zijn toegestaan.'
+                    )
+            ]
+    )
     description = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
-        return f"{self.name}"
+        return f"{self.code} | {self.description}"
 
 
 class TrackerGroup(models.Model):
+    """
+    Groepering van trackers, eventueel met afgebakend gebied en zichtbare velden.
+    """
     smartcode = models.CharField(
-        max_length=10,
-        unique=True,
-        validators=[RegexValidator(r'^[a-z0-9]+$', 'Alleen kleine letters (a-z) en cijfers (0-9) zijn toegestaan.')],
+            max_length=10,
+            unique=True,
+            validators=[RegexValidator(r'^[a-z0-9]+$', 'Alleen kleine letters (a-z) en cijfers (0-9) zijn toegestaan.')]
     )
     name = models.CharField(max_length=255, unique=True)
     area = gis_models.MultiPolygonField(
@@ -62,55 +102,60 @@ class TrackerGroup(models.Model):
             blank=True,
             null=True,
             srid=4326,
-            default=default_tracker_area,
+            default=default_tracker_area
     )
     visible_fields = models.JSONField(default=default_tracker_visible_fields, blank=True)
 
     identifier_types = models.ManyToManyField(
-        TrackerIdentifierType,
-        blank=True,
-        related_name='groups'
+            TrackerIdentifierType,
+            blank=True,
+            related_name='groups'
     )
 
     class Meta:
         ordering = ['smartcode']
 
-
     def clean(self):
+        """
+        Voorkomt dat de smartcode achteraf gewijzigd wordt.
+        """
         if self.pk:
             old = TrackerGroup.objects.filter(pk=self.pk).first()
             if old and self.smartcode != old.smartcode:
                 raise ValidationError({'smartcode': _(f'Smartcode "{old.smartcode}" mag niet worden aangepast na creatie.')})
-
 
     def __str__(self):
         return f'{self.smartcode} | {self.name}'
 
 
 class Tracker(models.Model):
+    """
+    Een volgobject (tracker) met optionele AIS/ADSB eigenschappen en geografische positie.
+    """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    meta_timestamp = models.BigIntegerField(blank=True, null=True, help_text="UNIX tijd in ms")
     screen_name = models.CharField(max_length=255)
-    icon = models.CharField(max_length=255)
+    icon = models.CharField(max_length=255, blank=True, null=True)
 
     ais_type = models.CharField(max_length=255, blank=True, null=True)
     ais_name = models.CharField(max_length=255, blank=True, null=True)
     ais_callsign = models.CharField(max_length=255, blank=True, null=True)
     ais_length = models.DecimalField(
-        max_digits=5, decimal_places=2,
-        validators=[MinValueValidator(0), MaxValueValidator(500)],
-        default=0, blank=True, null=True
+            max_digits=5, decimal_places=2,
+            validators=[MinValueValidator(0), MaxValueValidator(500)],
+            default=0, blank=True, null=True
     )
     ais_width = models.DecimalField(
-        max_digits=5, decimal_places=2,
-        validators=[MinValueValidator(0), MaxValueValidator(500)],
-        default=0, blank=True, null=True
+            max_digits=5, decimal_places=2,
+            validators=[MinValueValidator(0), MaxValueValidator(500)],
+            default=0, blank=True, null=True
     )
 
     adsb_type = models.CharField(max_length=255, blank=True, null=True)
     adsb_registration = models.CharField(max_length=255, blank=True, null=True)
     adsb_callsign = models.CharField(max_length=255, blank=True, null=True)
 
-    altitude = models.FloatField(default=0, blank=True, null=True)
+    altitude = models.FloatField(blank=True, null=True)
     speed = models.FloatField(blank=True, null=True)
     heading = models.FloatField(blank=True, null=True)
     position_timestamp = models.BigIntegerField(blank=True, null=True, help_text="UNIX tijd in ms")
@@ -120,20 +165,60 @@ class Tracker(models.Model):
 
     @property
     def position_timestamp_display(self):
+        """
+        Geeft de timestamp weer in leesbaar formaat (UTC).
+        """
         if self.position_timestamp:
             dt = datetime.fromtimestamp(self.position_timestamp / 1000, tz=timezone.utc)
             return dt.isoformat(sep=' ', timespec='seconds')
         return "-"
 
     @property
-    def age_in_sec(self):
+    def position_age_in_sec(self):
+        """
+        Leeftijdberekening in milliseconden sinds laatste positie.
+        """
         if self.position_timestamp:
             return int(time.time() * 1000) - self.position_timestamp
         return None
 
     @property
-    def age_display(self):
-        age_ms = self.age_in_sec
+    def position_age_display(self):
+        """
+        Levert de leeftijd in een leesbaar formaat (zoals '2m 30s').
+        """
+        return self._format_age_display(self.position_age_in_sec)
+
+    @property
+    def meta_timestamp_display(self):
+        """
+        Geeft de meta timestamp weer in leesbaar formaat (UTC).
+        """
+        if self.meta_timestamp:
+            dt = datetime.fromtimestamp(self.meta_timestamp / 1000, tz=timezone.utc)
+            return dt.isoformat(sep=' ', timespec='seconds')
+        return "-"
+
+    @property
+    def meta_age_in_sec(self):
+        """
+        Leeftijdberekening in milliseconden sinds meta_timestamp.
+        """
+        if self.meta_timestamp:
+            return int(time.time() * 1000) - self.meta_timestamp
+        return None
+
+    @property
+    def meta_age_display(self):
+        """
+        Levert de leeftijd van de meta_timestamp in een leesbaar formaat.
+        """
+        return self._format_age_display(self.meta_age_in_sec)
+
+    def _format_age_display(self, age_ms):
+        """
+        Interne helper om leeftijd weer te geven als '2m 30s'.
+        """
         if not age_ms:
             return "-"
         total_seconds = age_ms // 1000
@@ -149,24 +234,36 @@ class Tracker(models.Model):
         return ' '.join(parts)
 
     def __str__(self):
-        return self.screen_name
+        return self.screen_name or str(self.id)
 
 
 class TrackerIdentifier(models.Model):
+    """
+    Identificatie die een externe ID koppelt aan een specifieke tracker.
+    """
     external_id = models.CharField(max_length=255)
     identifier_type = models.ForeignKey(TrackerIdentifierType, on_delete=models.PROTECT, related_name='tracker_identifiers')
     tracker = models.ForeignKey(Tracker, on_delete=models.CASCADE, related_name='identifiers')
     identkey = models.CharField(max_length=255, unique=True, editable=False)
 
+
     class Meta:
-        unique_together = ('external_id', 'identifier_type')
+        constraints = [
+                UniqueConstraint(fields=['external_id', 'identifier_type'], name='unique_external_id_per_type'),
+                UniqueConstraint(fields=['tracker', 'identifier_type'], name='unique_tracker_per_type'),
+        ]
 
     def save(self, *args, **kwargs):
+        """
+        Zet de external_id om naar hoofdletters, stelt de identkey in,
+        en koppelt automatisch relevante groepen aan de tracker.
+        """
+        self.external_id = self.external_id.upper()
         self.identkey = f"{self.identifier_type.name}_{self.external_id}".upper()
         super().save(*args, **kwargs)
 
         groups_to_add = self.identifier_type.groups.exclude(
-            id__in=self.tracker.groups.values_list('id', flat=True)
+                id__in=self.tracker.groups.values_list('id', flat=True)
         )
         self.tracker.groups.add(*groups_to_add)
 
@@ -175,28 +272,40 @@ class TrackerIdentifier(models.Model):
 
 
 class TrackerMessage(models.Model):
+    """
+    Bericht gekoppeld aan een TrackerIdentifier, bevat JSON-inhoud en optioneel een positie.
+    """
     tracker_identifier = models.ForeignKey(TrackerIdentifier, on_delete=models.CASCADE, related_name='messages')
     msgtype = models.CharField(max_length=10, default=None)
     content = models.JSONField()
-    created_at = models.BigIntegerField(help_text="UNIX tijd in milliseconden (UTC)")
+    message_timestamp = models.BigIntegerField(default=int(time.time() * 1000), help_text="UNIX tijd in milliseconden (UTC)")
     position = gis_models.PointField(geography=True, blank=True, null=True, srid=4326)
     sha256_key = models.CharField(max_length=64, blank=True, null=True, unique=True)
 
     @property
-    def created_at_display(self):
-        if self.created_at:
-            dt = datetime.fromtimestamp(self.created_at / 1000, tz=timezone.utc)
+    def message_timestamp_display(self):
+        """
+        Geeft de timestamp weer in leesbaar formaat (UTC).
+        """
+        if self.message_timestamp:
+            dt = datetime.fromtimestamp(self.message_timestamp / 1000, tz=timezone.utc)
             return dt.isoformat(sep=' ', timespec='seconds')
         return "-"
 
     @property
     def age_in_sec(self):
-        if self.position_timestamp:
-            return int(time.time() * 1000) - self.position_timestamp
+        """
+        Leeftijdberekening in milliseconden sinds dit bericht.
+        """
+        if self.message_timestamp:
+            return int(time.time() * 1000) - self.message_timestamp
         return None
 
     @property
     def age_display(self):
+        """
+        Geeft de leeftijd van het bericht terug als leesbare string.
+        """
         age_ms = self.age_in_sec
         if not age_ms:
             return "-"
@@ -212,9 +321,10 @@ class TrackerMessage(models.Model):
         if seconds or not parts: parts.append(f"{seconds}s")
         return ' '.join(parts)
 
-
-
     def save(self, *args, **kwargs):
+        """
+        Genereert automatisch een hash van de content indien niet aanwezig.
+        """
         if not self.sha256_key and self.content:
             import hashlib, json
             base_str = json.dumps(self.content, sort_keys=True)
@@ -222,4 +332,4 @@ class TrackerMessage(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"Message for {self.tracker_identifier} at {self.created_at}"
+        return f"Message for {self.tracker_identifier} at {self.message_timestamp_display}"

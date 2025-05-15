@@ -11,7 +11,8 @@ BROKER_IP = settings.MQTT_BROKER_IP
 PORT = settings.MQTT_PORT
 KEEPALIVE = getattr(settings, "MQTT_KEEPALIVE", 120)
 
-mqtt_clients = {}
+# Verwachte structuur: { client_name: {"client": mqtt.Client, "client_id": str, "publish": Callable } }
+mqtt_clients: dict[str, dict] = {}
 publish_lock = threading.Lock()
 
 logger.debug(f"Zoek MQTT broker op {BROKER_IP}:{PORT}")
@@ -50,7 +51,7 @@ def on_connect(client, userdata, flags, rc):
 def on_disconnect(client, userdata, rc):
     """
     Callback bij het verbreken van de verbinding met de broker.
-    Probeert automatisch opnieuw te verbinden.
+    Probeert automatisch opnieuw te verbinden. Verwijdert client bij blijvende fout.
 
     Args:
         client (mqtt.Client): De MQTT client instantie.
@@ -71,6 +72,16 @@ def on_disconnect(client, userdata, rc):
             logger.error(f"[{client_id}] Reconnect poging mislukt: {e}")
         reconnect_attempts += 1
 
+        if reconnect_attempts > 5:
+            logger.error(f"[{client_id}] Te veel reconnect pogingen, verwijder client uit cache.")
+            # Zoek en verwijder client_name uit mqtt_clients
+            for name, data in list(mqtt_clients.items()):
+                if data.get("client_id") == client_id:
+                    del mqtt_clients[name]
+                    logger.info(f"[{client_id}] Verwijderd uit actieve clients.")
+                    break
+            break
+
 
 def on_message(client, userdata, message):
     """
@@ -88,14 +99,15 @@ def on_message(client, userdata, message):
 
 def client_disconnect(client):
     """
-    Stopt de event-loop van de client en logt de afsluiting.
+    Stopt de event-loop van de client, verbreekt de verbinding en logt de afsluiting.
 
     Args:
         client (mqtt.Client): De MQTT client om te stoppen.
     """
     client_id = client._client_id.decode("utf-8")
     client.loop_stop()
-    logger.info(f"MQTT-client {client_id} gestopt.")
+    client.disconnect()
+    logger.info(f"MQTT-client {client_id} gestopt en verbinding verbroken.")
 
 
 def start_publisher(client_name, topic):
@@ -176,14 +188,19 @@ def start_subscriber(client_name, topic):
         client.on_message = on_message
         client.reconnect_delay_set(min_delay=1, max_delay=10)
         client.connect(BROKER_IP, PORT, KEEPALIVE)
-        client.subscribe(topic, qos=1)
+
+        result, mid = client.subscribe(topic, qos=1)
+        if result != mqtt.MQTT_ERR_SUCCESS:
+            logger.error(f"[{client_id}] Abonneren op {topic} mislukt met foutcode {result}")
+        else:
+            logger.info(f"[{client_id}] Geabonneerd op {topic}")
+
         client.loop_start()
 
         mqtt_clients[client_name] = {
             "client": client,
             "client_id": client_id
         }
-        logger.info(f"[{client_id}] Geabonneerd op {topic}")
         return client
 
     except Exception as e:
