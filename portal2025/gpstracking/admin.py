@@ -8,7 +8,7 @@ from django.core.exceptions import ValidationError
 
 from .models import (
     Tracker, TrackerGroup, TrackerIdentifier, TrackerIdentifierType, TrackerMessage,
-    get_tracker_field_choices
+    get_tracker_field_choices, default_tracker_visible_fields
 )
 
 # Helemaal onderaan je admin.py
@@ -20,11 +20,14 @@ admin.site.site_title = "TTS Beheerportal"
 class TrackerGroupAdminForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
         self.fields['visible_fields'] = forms.MultipleChoiceField(
             choices=get_tracker_field_choices(),
             required=False,
-            widget=forms.CheckboxSelectMultiple
+            widget=forms.CheckboxSelectMultiple,
+            initial=default_tracker_visible_fields()  # ✅ HIER
         )
+
         self.fields['identifier_types'] = forms.ModelMultipleChoiceField(
             queryset=TrackerIdentifierType.objects.all(),
             required=False,
@@ -214,8 +217,9 @@ class TrackerIdentifierAdmin(admin.ModelAdmin):
 
 @admin.register(TrackerGroup)
 class TrackerGroupAdmin(LeafletGeoAdmin):
+    list_display = ('smartcode', 'name')
     form = TrackerGroupAdminForm
-    search_fields = ('name',)
+    search_fields = ('name','smartcode')
     inlines = [TrackerInline]
 
 
