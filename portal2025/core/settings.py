@@ -46,7 +46,6 @@ INSTALLED_APPS = [
     'leaflet',
 
     'utils',
-    # 'api',
     'gpstracking'
 ]
 

@@ -68,14 +68,14 @@ class GpsTrackingUtilDB:
             return GpsTrackingUtilDB.tracker_cache[identkey]
 
         try:
-            identifier_type_name = formated.get("identtype")
+            identifier_type_code = formated.get("identtype")
             external_id = formated.get("identid")
 
             if not identifier_type_name or not external_id:
                 logger.warning(f"Onvoldoende data om identifier aan te maken voor {identkey}")
                 return None
 
-            identifier_type = TrackerIdentifierType.objects.get(name=identifier_type_name)
+            identifier_type = TrackerIdentifierType.objects.get(code=identifier_type_code)
             tracker = Tracker.objects.create(screen_name=identkey)
 
             tracker_identifier = TrackerIdentifier.objects.create(

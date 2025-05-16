@@ -11,8 +11,6 @@ from django.db.models import UniqueConstraint
 from django.utils.translation import gettext_lazy as _
 
 
-
-
 def default_tracker_area():
     """
     Geeft een standaardgebied (grofweg Nederland) terug als MultiPolygon.
@@ -133,7 +131,6 @@ class Tracker(models.Model):
     Een volgobject (tracker) met optionele AIS/ADSB eigenschappen en geografische positie.
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    meta_timestamp = models.BigIntegerField(blank=True, null=True, help_text="UNIX tijd in ms")
     screen_name = models.CharField(max_length=255)
     icon = models.CharField(max_length=255, blank=True, null=True)
 
@@ -154,12 +151,13 @@ class Tracker(models.Model):
     adsb_type = models.CharField(max_length=255, blank=True, null=True)
     adsb_registration = models.CharField(max_length=255, blank=True, null=True)
     adsb_callsign = models.CharField(max_length=255, blank=True, null=True)
+    meta_timestamp = models.BigIntegerField(blank=True, null=True, help_text="UNIX tijd in ms")
 
     altitude = models.FloatField(blank=True, null=True)
     speed = models.FloatField(blank=True, null=True)
     heading = models.FloatField(blank=True, null=True)
-    position_timestamp = models.BigIntegerField(blank=True, null=True, help_text="UNIX tijd in ms")
     position = gis_models.PointField(geography=True, blank=True, null=True, srid=4326)
+    position_timestamp = models.BigIntegerField(blank=True, null=True, help_text="UNIX tijd in ms")
 
     groups = models.ManyToManyField(TrackerGroup, related_name='trackers', blank=True)
 
@@ -246,7 +244,6 @@ class TrackerIdentifier(models.Model):
     tracker = models.ForeignKey(Tracker, on_delete=models.CASCADE, related_name='identifiers')
     identkey = models.CharField(max_length=255, unique=True, editable=False)
 
-
     class Meta:
         constraints = [
                 UniqueConstraint(fields=['external_id', 'identifier_type'], name='unique_external_id_per_type'),
@@ -276,9 +273,9 @@ class TrackerMessage(models.Model):
     Bericht gekoppeld aan een TrackerIdentifier, bevat JSON-inhoud en optioneel een positie.
     """
     tracker_identifier = models.ForeignKey(TrackerIdentifier, on_delete=models.CASCADE, related_name='messages')
-    msgtype = models.CharField(max_length=10, default=None)
+    msgtype = models.CharField(max_length=30, default=None)
     content = models.JSONField()
-    message_timestamp = models.BigIntegerField(default=int(time.time() * 1000), help_text="UNIX tijd in milliseconden (UTC)")
+    message_timestamp = models.BigIntegerField(help_text="UNIX tijd in milliseconden (UTC)")
     position = gis_models.PointField(geography=True, blank=True, null=True, srid=4326)
     sha256_key = models.CharField(max_length=64, blank=True, null=True, unique=True)
 
@@ -332,4 +329,26 @@ class TrackerMessage(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"Message for {self.tracker_identifier} at {self.message_timestamp_display}"
+        return f"{self.tracker_identifier} msg {self.msgtype} at {self.message_timestamp_display}"
+
+
+class TrackerDecoder(models.Model):
+    identifier_type = models.ForeignKey(TrackerIdentifierType, on_delete=models.PROTECT, related_name='decoder_identifiertypes')
+    msgtype = models.CharField(max_length=30, default=None)
+    mapping = models.JSONField(default=dict, blank=True)
+
+    def __str__(self):
+        return f"{self.identifier_type.code} - {self.msgtype}"
+
+
+class TrackerStName(models.Model):
+    name = models.CharField(max_length=30, default=None, validators=[
+            RegexValidator(
+                    r'^[a-z0-9_]+$',
+                    'Alleen kleine letters (a-z), cijfers (0-9) en underscores (_) zijn toegestaan.'
+            )])
+    class Meta:
+        verbose_name = "Tracker standardized name"
+        verbose_name_plural = "Tracker standardized names"
+    def __str__(self):
+        return f"{self.name}"
