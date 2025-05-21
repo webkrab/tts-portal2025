@@ -36,8 +36,7 @@ Verwerkingsclients lezen de `input_message`, en zetten deze om naar een standaar
 ```python
 MQTT internal_message = {
     "raw": data,                              # Originele bericht
-    "data": {msg_key: decoded_payload},       # Gestandaardiseerde ruwe data
-    "formated": formated,                     # Gefilterde, geformatteerde data voor Tailor
+    "identifier_type": identifier_type_code   # Code van de ditntifiere
     "msgtype": msgtype,                       # Overgenomen uit input
     "msghash": msghash,                       # Overgenomen uit input
     "received": received,                     # Overgenomen uit input

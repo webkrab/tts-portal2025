@@ -3,8 +3,9 @@ from django.contrib import admin
 from django.core.exceptions import ValidationError
 from django.utils.safestring import mark_safe
 from django.utils.text import slugify
-import json
-
+from django.db import models
+from django.db.models import Field
+from django.contrib.gis.geos import MultiPolygon, Polygon, Point
 from leaflet.admin import LeafletGeoAdmin
 
 from .models import (
@@ -14,7 +15,7 @@ from .models import (
     TrackerIdentifier,
     TrackerIdentifierType,
     TrackerMessage,
-    TrackerStName,
+    TrackerDecoderField,
     default_tracker_visible_fields,
     get_tracker_field_choices,
 )
@@ -22,23 +23,74 @@ from .models import (
 admin.site.site_header = "TTS Beheer"
 admin.site.site_title = "TTS Beheerportal"
 
+# --------- CUSTOM WIDGET --------- #
+
+class MappingDropdownWidget(forms.Widget):
+    def format_value(self, value):
+        import json
+        if isinstance(value, str):
+            try:
+                value = json.loads(value)
+            except json.JSONDecodeError:
+                return {}
+        if not isinstance(value, dict):
+            return {}
+        return value
+
+    def render(self, name, value, attrs=None, renderer=None):
+        value = self.format_value(value)
+
+        choices = list(TrackerDecoderField.objects.values_list('name', flat=True))
+        choices_html = lambda selected: ''.join(
+            [f'<option value="" {"selected" if selected in ("", None) else ""}>---</option>'] +
+            [f'<option value="{c}" {"selected" if c == selected else ""}>{c}</option>' for c in choices]
+        )
+
+        html = '<table><tr><th>Sleutel</th><th>Waarde</th></tr>'
+
+        for k, v in sorted(value.items()):
+            html += f'''
+            <tr>
+                <td><input type="text" name="{name}_key" value="{k}" /></td>
+                <td><select name="{name}_value">{choices_html(v)}</select></td>
+            </tr>
+            '''
+
+        # Extra lege rij
+        html += f'''
+        <tr>
+            <td><input type="text" name="{name}_key" /></td>
+            <td><select name="{name}_value">{choices_html("")}</select></td>
+        </tr>
+        </table>
+        '''
+
+        return mark_safe(html)
+
+    def value_from_datadict(self, data, files, name):
+        keys = data.getlist(f'{name}_key')
+        values = data.getlist(f'{name}_value')
+        result = {k: (v if v else None) for k, v in zip(keys, values) if k}
+        return result or {}
+
+
 
 # --------- FORMULIEREN --------- #
 
 class TrackerGroupAdminForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
+        _, all_fields = get_tracker_field_choices()
         self.fields['visible_fields'] = forms.MultipleChoiceField(
-                choices=get_tracker_field_choices(),
-                required=False,
-                widget=forms.CheckboxSelectMultiple,
-                initial=default_tracker_visible_fields()
+            choices=all_fields,
+            required=False,
+            widget=forms.CheckboxSelectMultiple,
+            initial=default_tracker_visible_fields()
         )
         self.fields['identifier_types'] = forms.ModelMultipleChoiceField(
-                queryset=TrackerIdentifierType.objects.all(),
-                required=False,
-                widget=forms.CheckboxSelectMultiple
+            queryset=TrackerIdentifierType.objects.all(),
+            required=False,
+            widget=forms.CheckboxSelectMultiple
         )
 
     class Meta:
@@ -55,9 +107,9 @@ class TrackerIdentifierTypeAdminForm(forms.ModelForm):
         kwargs['initial'] = initial
         super().__init__(*args, **kwargs)
         self.fields['groups'] = forms.ModelMultipleChoiceField(
-                queryset=TrackerGroup.objects.all(),
-                required=False,
-                widget=forms.CheckboxSelectMultiple
+            queryset=TrackerGroup.objects.all(),
+            required=False,
+            widget=forms.CheckboxSelectMultiple
         )
 
     class Meta:
@@ -98,7 +150,7 @@ class TrackerIdentifierInlineForm(forms.ModelForm):
                 qs = qs.exclude(pk=self.instance.pk)
             if qs.exists():
                 raise ValidationError({
-                        "external_id": f"De combinatie van type '{identifier_type.code}' en ID '{external_id}' bestaat al."
+                    "external_id": f"De combinatie van type '{identifier_type.code}' en ID '{external_id}' bestaat al."
                 })
 
         return cleaned_data
@@ -121,10 +173,34 @@ class TrackerIdentifierAdminForm(forms.ModelForm):
                 qs = qs.exclude(pk=self.instance.pk)
             if qs.exists():
                 raise ValidationError({
-                        "external_id": f"De combinatie van type '{identifier_type.code}' en ID '{external_id}' bestaat al."
+                    "external_id": f"De combinatie van type '{identifier_type.code}' en ID '{external_id}' bestaat al."
                 })
 
         return cleaned_data
+
+
+class TrackerDecoderAdminForm(forms.ModelForm):
+    mapping = forms.JSONField(widget=MappingDropdownWidget(), required=False)
+
+    class Meta:
+        model = TrackerDecoder
+        fields = '__all__'
+
+
+class TrackerDecoderFieldAdminForm(forms.ModelForm):
+    class Meta:
+        model = TrackerDecoderField
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        model_fields, _ = get_tracker_field_choices()
+        self.fields['dbfield'] = forms.ChoiceField(
+            choices=[('', '---')] + model_fields,
+            required=False,
+            label=self.fields['dbfield'].label,
+            help_text=self.fields['dbfield'].help_text
+        )
 
 
 # --------- INLINES --------- #
@@ -154,7 +230,7 @@ class TrackerInline(admin.TabularInline):
         group = obj.trackergroup
         type_ids = group.identifier_types.values_list('id', flat=True)
         matching_types = tracker.identifiers.filter(
-                identifier_type_id__in=type_ids
+            identifier_type_id__in=type_ids
         ).values_list('identifier_type__code', flat=True).distinct()
         return "Via Identifier(s): " + ", ".join(matching_types) if matching_types else "Direct"
 
@@ -176,7 +252,7 @@ class TrackerAdmin(LeafletGeoAdmin):
 
     def inferred_group_list(self, obj):
         groups = TrackerGroup.objects.filter(
-                identifier_types__in=obj.identifiers.values_list('identifier_type', flat=True)
+            identifier_types__in=obj.identifiers.values_list('identifier_type', flat=True)
         ).distinct()
         return ", ".join(g.name for g in groups)
 
@@ -210,11 +286,9 @@ class TrackerAdmin(LeafletGeoAdmin):
                     def col(admin_self, obj):
                         identifiers = obj.identifiers.filter(identifier_type=itype)
                         return ", ".join(i.external_id for i in identifiers)
-
                     col.short_description = itype.code
                     col.admin_order_field = None
                     return col
-
                 setattr(self.__class__, column_name, make_func(itype))
             columns.append(column_name)
         return columns
@@ -248,139 +322,29 @@ class TrackerIdentifierTypeAdmin(admin.ModelAdmin):
 class TrackerMessageAdmin(LeafletGeoAdmin):
     list_display = ('tracker_identifier', 'created_at_display', 'msgtype', 'sha256_key')
     search_fields = (
-            'tracker_identifier__external_id',
-            'tracker_identifier__tracker__screen_name',
+        'tracker_identifier__external_id',
+        'tracker_identifier__tracker__screen_name',
     )
     list_filter = ('tracker_identifier', 'msgtype')
-    readonly_fields = ('sha256_key', 'created_at_display')
+    readonly_fields = ('sha256_key', 'message_timestamp_display')
 
     def created_at_display(self, obj):
-        return obj.created_at_display
+        return obj.message_timestamp_display
 
     created_at_display.short_description = "Received at"
-    created_at_display.admin_order_field = 'created_at'
-
-
-class TrackerDecoderAdminForm(forms.ModelForm):
-    class Meta:
-        model = TrackerDecoder
-        exclude = ['mapping']
-
-    new_key = forms.CharField(required=False, label="Mapping Key")
-    new_key_stn = forms.ChoiceField(required=False, label="Standardized name")
-    new_key_dbn = forms.ChoiceField(required=False, label="Database field")
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        tracker_fields = [f.name for f in Tracker._meta.fields]
-        stn_choices = [('', '---')] + [(stn.name, stn.name) for stn in TrackerStName.objects.all()]
-        dbn_choices = [('', '---')] + [(f, f) for f in tracker_fields]
-
-        self.fields['new_key_stn'].choices = stn_choices
-        self.fields['new_key_dbn'].choices = dbn_choices
-
-        current_mapping = self.instance.mapping or {}
-
-        if current_mapping:
-            rows = "".join(
-                    f"<tr><td><b>{key}</b></td><td>{val.get('DBN')}</td><td>{val.get('STN')}</td></tr>"
-                    for key, val in current_mapping.items()
-            )
-            html_table = f"""
-                <table style='border-collapse: collapse;'>
-                    <thead>
-                        <tr><th style='padding:4px;border:1px solid #ccc;'>Key</th><th style='padding:4px;border:1px solid #ccc;'>DBN</th><th style='padding:4px;border:1px solid #ccc;'>STN</th></tr>
-                    </thead>
-                    <tbody>{rows}</tbody>
-                </table>
-            """
-            self.fields['mapping_preview'] = forms.CharField(
-                    label="Huidige Mapping",
-                    required=False,
-                    widget=forms.Textarea(attrs={
-                            'readonly': 'readonly',
-                            'style'   : 'font-family: monospace; border: none; background: transparent;'
-                    }),
-                    initial=mark_safe(html_table)
-            )
-
-        self._existing_keys = []
-        for key in current_mapping.keys():
-            self._existing_keys.append(key)
-            stn_val = current_mapping[key].get('STN', '')
-            dbn_val = current_mapping[key].get('DBN', '')
-            self.fields[f'{key}_stn'] = forms.ChoiceField(
-                    choices=stn_choices, required=False, label=f'{key} STN')
-            self.fields[f'{key}_dbn'] = forms.ChoiceField(
-                    choices=dbn_choices, required=False, label=f'{key} DBN')
-            self.fields[f'{key}_delete'] = forms.BooleanField(
-                    required=False, label=f"Verwijder {key}")
-            self.fields[f'{key}_stn'].initial = stn_val
-            self.fields[f'{key}_dbn'].initial = dbn_val
-
-    def clean(self):
-        cleaned_data = super().clean()
-        new_mapping = {}
-
-        for key in self._existing_keys:
-            if cleaned_data.get(f'{key}_delete'):
-                continue
-            stn_val = cleaned_data.get(f'{key}_stn') or None
-            dbn_val = cleaned_data.get(f'{key}_dbn') or None
-            new_mapping[key] = {'STN': stn_val, 'DBN': dbn_val}
-
-        new_key = cleaned_data.get('new_key', '').strip()
-        new_stn = cleaned_data.get('new_key_stn') or None
-        new_dbn = cleaned_data.get('new_key_dbn') or None
-
-        if new_key:
-            new_mapping[new_key] = {'STN': new_stn, 'DBN': new_dbn}
-
-        cleaned_data['mapping'] = new_mapping
-        return cleaned_data
-
-    def save(self, commit=True):
-        instance = super().save(commit=False)
-        instance.mapping = self.cleaned_data.get('mapping', {})
-        if commit:
-            instance.save()
-        return instance
+    created_at_display.admin_order_field = 'message_timestamp'
 
 
 @admin.register(TrackerDecoder)
 class TrackerDecoderAdmin(admin.ModelAdmin):
     form = TrackerDecoderAdminForm
-    readonly_fields = ['display_mapping_table']
-    search_fields = (
-            'identifier_type__code',
-            'msgtype',
-    )
-    list_filter = ('identifier_type__code',
-                   'msgtype',)
+    list_display = ('identifier_type', 'msgtype')
+    search_fields = ('identifier_type__code', 'msgtype')
+    list_filter = ('identifier_type__code', 'msgtype')
 
-    def display_mapping_table(self, obj):
-        if not obj or not obj.mapping:
-            return "Geen mapping aanwezig."
-        rows = "".join(
-                f"<tr><td><b>{key}</b></td><td>{val.get('DBN')}</td><td>{val.get('STN')}</td></tr>"
-                for key, val in obj.mapping.items()
-        )
-        return mark_safe(f"""
-            <table style='border-collapse: collapse;'>
-                <thead>
-                    <tr>
-                        <th style='padding:4px;border:1px solid #ccc;'>Key</th>
-                        <th style='padding:4px;border:1px solid #ccc;'>DBN</th>
-                        <th style='padding:4px;border:1px solid #ccc;'>STN</th>
-                    </tr>
-                </thead>
-                <tbody>{rows}</tbody>
-            </table>
-        """)
 
-    display_mapping_table.short_description = "Huidige Mapping"
-
-@admin.register(TrackerStName)
-class TrackerStNameAdmin(admin.ModelAdmin):
-    list_display = ('name',)
-    search_fields = ('name',)
+@admin.register(TrackerDecoderField)
+class TrackerDecoderFieldsAdmin(admin.ModelAdmin):
+    form = TrackerDecoderFieldAdminForm
+    list_display = ('name', 'dbfield')
+    search_fields = ('name', 'dbfield')

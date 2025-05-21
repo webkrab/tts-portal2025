@@ -110,7 +110,7 @@
       "MessageID":null,
       "RepeatIndicator":null,
       "Retransmission":null,
-      "Sequenceinteger":null,
+      "Sequenceinteger":null,g
       "Spare":null,
       "UserID":"mmsi",
       "Valid":"None"

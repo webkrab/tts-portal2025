@@ -2,13 +2,13 @@ import hashlib
 from utils.logger import get_logger
 import time
 from enum import Enum
-
+from dateutil import parser as dup
+from datetime import datetime
 
 # Logger instellen
 logger = get_logger(__name__)
-
-
 # Generators
+
 def genereer_hash(msg):
     try:
         return hashlib.sha256(msg.encode()).hexdigest()
@@ -19,28 +19,25 @@ def genereer_hash(msg):
 #convert
 def remap_keys(data, mapping):
     result = {}
+    unmapped_keys = []
+
     logger.debug(f"remap_keys: {data}")
 
     flat_data = flatten_multilevel(data, prefix='')
 
     for key, value in flat_data.items():
         if key in mapping:
-            mapped = {}
-            for original_field, new_name in mapping[key].items():
-                if new_name is None:
-                    # Overslaan van velden met None mapping
-                    continue
-                if original_field in value:
-                    mapped[new_name] = value[original_field]
-                else:
-                    logger.warning(f"Veld '{original_field}' niet gevonden in {key}: {value}")
-            result = mapped
-            break  # Stoppen na de eerste match
-    else:
-        logger.error(f"Geen overeenkomende keys gevonden in bericht {data}")
-        return None
+            new_key = mapping[key]
+            if new_key is not None and value is not None:
+                result[new_key] = value
+        else:
+            unmapped_keys.append(key)
 
-    return result
+    if not result:
+        logger.error(f"Geen overeenkomende keys gevonden in bericht: {data}")
+        return None, unmapped_keys
+
+    return result, unmapped_keys
 
 def flatten_multilevel(data, prefix=''):
     flat_items = []
@@ -66,6 +63,7 @@ def flatten_multilevel(data, prefix=''):
 def convert_speed(value, from_unit):
     """
     Converts any speed value to a dict with keys: 'm/s', 'km/h', 'kt', 'bft'.
+    Return m/s
     """
     units_to_mps = {
         'm/s': 1,
@@ -126,3 +124,24 @@ def convert_enum_values(obj):
     if isinstance(obj, Enum):
         return obj.value, obj.name if obj.value is not None else None
     return obj, None
+
+def parse_to_unixtimestamp(ts):
+    try:
+        if isinstance(ts, datetime):
+            # datetime -> UNIX tijd in ms
+            return int(ts.timestamp() * 1000)
+        elif isinstance(ts, (int, float)):
+            # Max waarde van 32bit unix (19 januari 2038 om 03:14:07 UTC) dan is het waarschijnlijk sec.
+            if ts < 2147483647:
+                return int(float(ts) * 1000)
+            else:
+                return int(float(ts))
+        elif isinstance(ts, str) and ts.isdigit():
+            return int(float(ts) * 1000)
+        else:
+            # Probeer string-parsing van datum
+            dt = dup.parse(ts)
+            return int(dt.timestamp() * 1000)
+    except Exception as e:
+        logger.error(f"Datum/Tijd conversie naar unixtime mislukt voor {ts}: {e}")
+        return None

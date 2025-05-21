@@ -8,8 +8,8 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
 from django.db.models import UniqueConstraint
+from django.utils.functional import lazy
 from django.utils.translation import gettext_lazy as _
-
 
 def default_tracker_area():
     """
@@ -35,18 +35,21 @@ def default_tracker_area():
 
 def get_tracker_field_choices():
     """
-    Geeft een lijst van beschikbare veldnamen voor trackers, inclusief extra virtuele velden.
+    Geeft een tuple van:
+    - model_fields: Alleen concrete velden uit het Tracker-model
+    - all_fields: model_fields + extra virtuele velden
 
     Returns:
-        List[Tuple[str, str]]: Keuzelijst met veldnamen.
+        Tuple[List[Tuple[str, str]], List[Tuple[str, str]]]
     """
     extra_fields = ["age_in_sec", "age_human", "ais_dimensions"]
     model_fields = [
-            (field.name, field.name)
-            for field in Tracker._meta.get_fields()
-            if isinstance(field, models.Field) and field.concrete and not field.auto_created
+        (field.name, field.name)
+        for field in Tracker._meta.get_fields()
+        if isinstance(field, models.Field) and field.concrete and not field.auto_created
     ]
-    return model_fields + [(field, field) for field in extra_fields]
+    all_fields = model_fields + [(field, field) for field in extra_fields]
+    return model_fields, all_fields
 
 
 def default_tracker_visible_fields():
@@ -256,7 +259,7 @@ class TrackerIdentifier(models.Model):
         en koppelt automatisch relevante groepen aan de tracker.
         """
         self.external_id = self.external_id.upper()
-        self.identkey = f"{self.identifier_type.name}_{self.external_id}".upper()
+        self.identkey = f"{self.identifier_type.code}_{self.external_id}".upper()
         super().save(*args, **kwargs)
 
         groups_to_add = self.identifier_type.groups.exclude(
@@ -265,7 +268,7 @@ class TrackerIdentifier(models.Model):
         self.tracker.groups.add(*groups_to_add)
 
     def __str__(self):
-        return f"{self.identifier_type.name}: {self.external_id} | {self.tracker.screen_name}"
+        return f"{self.identifier_type.code}: {self.external_id} | {self.tracker.screen_name}"
 
 
 class TrackerMessage(models.Model):
@@ -275,6 +278,8 @@ class TrackerMessage(models.Model):
     tracker_identifier = models.ForeignKey(TrackerIdentifier, on_delete=models.CASCADE, related_name='messages')
     msgtype = models.CharField(max_length=30, default=None)
     content = models.JSONField()
+    dbcall = models.JSONField(blank=True, null=True)
+    raw = models.JSONField(blank=True, null=True)
     message_timestamp = models.BigIntegerField(help_text="UNIX tijd in milliseconden (UTC)")
     position = gis_models.PointField(geography=True, blank=True, null=True, srid=4326)
     sha256_key = models.CharField(max_length=64, blank=True, null=True, unique=True)
@@ -341,14 +346,20 @@ class TrackerDecoder(models.Model):
         return f"{self.identifier_type.code} - {self.msgtype}"
 
 
-class TrackerStName(models.Model):
-    name = models.CharField(max_length=30, default=None, validators=[
+class TrackerDecoderField(models.Model):
+    name = models.CharField(max_length=30, default=None, unique=True, validators=[
             RegexValidator(
                     r'^[a-z0-9_]+$',
                     'Alleen kleine letters (a-z), cijfers (0-9) en underscores (_) zijn toegestaan.'
             )])
-    class Meta:
-        verbose_name = "Tracker standardized name"
-        verbose_name_plural = "Tracker standardized names"
+    dbfield = models.CharField(
+            max_length=100,
+            blank=True,
+            help_text="Kies een veld van het Tracker-model welke overeenkomt met dit decoder veld,<br>laat dit veld leeg om alleen in <i>Tracker messages</i> op te slaan."
+    )
+
     def __str__(self):
-        return f"{self.name}"
+        if self.dbfield:
+            return f"{self.name}| {self.dbfield}"
+        else:
+            return f"{self.name}| No DB field"
