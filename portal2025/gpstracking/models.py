@@ -342,6 +342,9 @@ class TrackerDecoder(models.Model):
     msgtype = models.CharField(max_length=30, default=None)
     mapping = models.JSONField(default=dict, blank=True)
 
+
+    class Meta:
+        ordering = ['identifier_type__code', 'msgtype']
     def __str__(self):
         return f"{self.identifier_type.code} - {self.msgtype}"
 
@@ -357,6 +360,9 @@ class TrackerDecoderField(models.Model):
             blank=True,
             help_text="Kies een veld van het Tracker-model welke overeenkomt met dit decoder veld,<br>laat dit veld leeg om alleen in <i>Tracker messages</i> op te slaan."
     )
+
+    class Meta:
+        ordering = ['name']
 
     def __str__(self):
         if self.dbfield:

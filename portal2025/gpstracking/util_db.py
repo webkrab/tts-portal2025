@@ -43,8 +43,8 @@ class GpsTrackingUtilDB:
         """
         if GpsTrackingUtilDB._mapping_cache is None:
             GpsTrackingUtilDB._mapping_cache = {
-                field.name: field.dbfield if field.dbfield else None
-                for field in TrackerDecoderField.objects.all()
+                    field.name: field.dbfield if field.dbfield else None
+                    for field in TrackerDecoderField.objects.all()
             }
             logger.info(f"Decoder field mapping geladen ({len(GpsTrackingUtilDB._mapping_cache)} velden).")
         return GpsTrackingUtilDB._mapping_cache
@@ -66,6 +66,7 @@ class GpsTrackingUtilDB:
         """
         Start een achtergrond thread om de cache periodiek te verversen.
         """
+
         def loop():
             while True:
                 time.sleep(GpsTrackingUtilDB.CACHE_REFRESH_INTERVAL)
@@ -161,14 +162,14 @@ class GpsTrackingUtilDB:
                 position = Point(float(data['longitude']), float(data['latitude']))
 
             new_entry = {
-                "tracker_identifier": tracker_identifier,
-                "msgtype": msgtype,
-                "content": data,
-                "raw": raw,
-                "dbcall": formated,
-                "message_timestamp": received,
-                "position": position,
-                "sha256_key": msghash
+                    "tracker_identifier": tracker_identifier,
+                    "msgtype"           : msgtype,
+                    "content"           : data,
+                    "raw"               : raw,
+                    "dbcall"            : formated,
+                    "message_timestamp" : received,
+                    "position"          : position,
+                    "sha256_key"        : msghash
             }
 
             with GpsTrackingUtilDB.buffer_lock:
@@ -176,9 +177,7 @@ class GpsTrackingUtilDB:
                 if not existing or received < existing["message_timestamp"]:
                     GpsTrackingUtilDB.message_buffer[msghash] = new_entry
 
-            GpsTrackingUtilDB.save_buffer_to_db()
-
-            #add logica om tracker object te updaten obv formated (veldnamen van model "Tracker" zijn 1 op 1 aan de keys van "formated")
+            # add logica om tracker object te updaten obv formated (veldnamen van model "Tracker" zijn 1 op 1 aan de keys van "formated")
 
         except Exception as e:
             logger.exception(f"Fout bij verwerken van MQTT bericht: {e}")
@@ -204,13 +203,14 @@ class GpsTrackingUtilDB:
         """
         Start een thread die de buffer periodiek wegschrijft.
         """
+
         def loop():
             while True:
                 time.sleep(GpsTrackingUtilDB.SAVE_INTERVAL)
                 GpsTrackingUtilDB.save_buffer_to_db()
 
         threading.Thread(target=loop, daemon=True).start()
-        logger.info("Start buffer schrijf-loop elke 15 seconden.")
+        logger.info(f"Start buffer schrijf-loop elke {GpsTrackingUtilDB.SAVE_INTERVAL} seconden.")
 
     @staticmethod
     def start_mqtt_subscriber():

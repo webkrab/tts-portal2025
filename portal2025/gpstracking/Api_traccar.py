@@ -4,7 +4,7 @@ import urllib.parse
 import requests
 import websocket
 
-from utils.gen_conv import convert_speed, flatten_multilevel, remap_keys, genereer_hash
+from utils.gen_conv import convert_speed, flatten_multilevel, remap_keys, genereer_hash, convert_to_unixtimestamp
 from gpstracking.models import TrackerDecoder, TrackerIdentifierType
 from utils.logger import get_logger
 from gpstracking.utils_geotracker import get_decoder_mapping, update_mapping_if_missing
@@ -113,13 +113,15 @@ class Traccar:
                     "identid": identid
                     }
 
+
         if "protocol" in rawdata:
             msgtype = f'{msgtype}_{rawdata["protocol"]}'
 
         flat_data = flatten_multilevel(rawdata, prefix='')
-        flat_data["serverTimeMs"] = flat_data.get("serverTime")
-        flat_data["deviceTimeMs"] = flat_data.get("deviceTime")
-        flat_data["fixTimeMs"] = flat_data.get("fixTime")
+        flat_data["lastUpdateMs"] = convert_to_unixtimestamp(flat_data.get("lastUpdate", None))
+        flat_data["serverTimeMs"] = convert_to_unixtimestamp(flat_data.get("serverTime", None))
+        flat_data["deviceTimeMs"] = convert_to_unixtimestamp(flat_data.get("deviceTime", None))
+        flat_data["fixTimeMs"] = convert_to_unixtimestamp(flat_data.get("fixTime", None))
         flat_data["speeds"] = convert_speed(flat_data.get("speed", 0.0), "kt")
 
         mapping = get_decoder_mapping(self, identtype, msgtype)
@@ -131,6 +133,9 @@ class Traccar:
         if not stdata:
             logger.error(f"Geen st_data mapping voor type: {msgtype} | {flat_data}")
             return
+
+        if str(identid) == str(539):
+            print("flat", flat_data, "\n stn", stdata )
 
         msghash = genereer_hash(json.dumps(stdata))
         mqttdata["identity"] = identity

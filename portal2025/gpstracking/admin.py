@@ -226,13 +226,21 @@ class TrackerInline(admin.TabularInline):
     readonly_fields = ('link_origin',)
 
     def link_origin(self, obj):
-        tracker = obj.tracker
-        group = obj.trackergroup
-        type_ids = group.identifier_types.values_list('id', flat=True)
-        matching_types = tracker.identifiers.filter(
-            identifier_type_id__in=type_ids
-        ).values_list('identifier_type__code', flat=True).distinct()
-        return "Via Identifier(s): " + ", ".join(matching_types) if matching_types else "Direct"
+        try:
+            tracker = obj.tracker
+            group = obj.group
+            type_ids = group.identifier_types.values_list('id', flat=True)
+            matching_types = tracker.identifiers.filter(
+                identifier_type_id__in=type_ids
+            ).values_list('identifier_type__code', flat=True).distinct()
+
+            codes = list(matching_types)
+            return f"Via Identifier(s): {', '.join(codes)}" if codes else "Direct"
+        except Exception:
+            return "Direct"
+
+    link_origin.short_description = "Link Origin"
+
 
 
 # --------- ADMIN CONFIG --------- #
@@ -320,7 +328,7 @@ class TrackerIdentifierTypeAdmin(admin.ModelAdmin):
 
 @admin.register(TrackerMessage)
 class TrackerMessageAdmin(LeafletGeoAdmin):
-    list_display = ('tracker_identifier', 'created_at_display', 'msgtype', 'sha256_key')
+    list_display = ('tracker_identifier', 'created_at_display', 'msgtype', 'sha256_key', 'content')
     search_fields = (
         'tracker_identifier__external_id',
         'tracker_identifier__tracker__screen_name',

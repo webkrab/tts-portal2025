@@ -7,6 +7,8 @@ from datetime import datetime
 
 # Logger instellen
 logger = get_logger(__name__)
+
+
 # Generators
 
 def genereer_hash(msg):
@@ -16,7 +18,8 @@ def genereer_hash(msg):
         logger.error(f"Hash-generatie mislukt: {e} voor {msg}")
         return None
 
-#convert
+
+# convert
 def remap_keys(data, mapping):
     result = {}
     unmapped_keys = []
@@ -39,6 +42,7 @@ def remap_keys(data, mapping):
 
     return result, unmapped_keys
 
+
 def flatten_multilevel(data, prefix=''):
     flat_items = []
 
@@ -60,26 +64,27 @@ def flatten_multilevel(data, prefix=''):
             return list(flat_items)
     return flat_items
 
+
 def convert_speed(value, from_unit):
     """
     Converts any speed value to a dict with keys: 'm/s', 'km/h', 'kt', 'bft'.
     Return m/s
     """
     units_to_mps = {
-        'm/s': 1,
-        'km/h': 1 / 3.6,
-        'mph': 0.44704,
-        'kt': 0.514444,
-        'ft/s': 0.3048,
-        'bft': None,  # special handling
+            'm/s' : 1,
+            'km/h': 1 / 3.6,
+            'mph' : 0.44704,
+            'kt'  : 0.514444,
+            'ft/s': 0.3048,
+            'bft' : None,  # special handling
     }
 
     def mps_to_beaufort(mps):
         bft_table = [
-            (0.0, 0.2), (0.3, 1.5), (1.6, 3.3), (3.4, 5.4),
-            (5.5, 7.9), (8.0, 10.7), (10.8, 13.8), (13.9, 17.1),
-            (17.2, 20.7), (20.8, 24.4), (24.5, 28.4), (28.5, 32.6),
-            (32.7, float('inf'))
+                (0.0, 0.2), (0.3, 1.5), (1.6, 3.3), (3.4, 5.4),
+                (5.5, 7.9), (8.0, 10.7), (10.8, 13.8), (13.9, 17.1),
+                (17.2, 20.7), (20.8, 24.4), (24.5, 28.4), (28.5, 32.6),
+                (32.7, float('inf'))
         ]
         for bft, (min_val, max_val) in enumerate(bft_table):
             if min_val <= mps <= max_val:
@@ -88,8 +93,8 @@ def convert_speed(value, from_unit):
 
     def beaufort_to_mps(bft):
         bft_midpoints = [
-            0.1, 0.9, 2.45, 4.4, 6.7, 9.35, 12.3, 15.5, 19.0,
-            22.6, 26.45, 30.55, 35.0
+                0.1, 0.9, 2.45, 4.4, 6.7, 9.35, 12.3, 15.5, 19.0,
+                22.6, 26.45, 30.55, 35.0
         ]
         if 0 <= bft < len(bft_midpoints):
             return bft_midpoints[bft]
@@ -108,10 +113,10 @@ def convert_speed(value, from_unit):
 
         # Create output dict
         output = {
-            'm/s': round(value_in_mps, 1),
-            'km/h': round(value_in_mps * 3.6, 1),
-            'kt': round(value_in_mps / 0.514444, 1),
-            'bft': mps_to_beaufort(value_in_mps)
+                'm/s' : round(value_in_mps, 1),
+                'km/h': round(value_in_mps * 3.6, 1),
+                'kt'  : round(value_in_mps / 0.514444, 1),
+                'bft' : mps_to_beaufort(value_in_mps)
         }
         return output
 
@@ -119,29 +124,34 @@ def convert_speed(value, from_unit):
         logger.error(f"Conversion error: {e} | value={value}, from_unit={from_unit}")
         return None
 
+
 def convert_enum_values(obj):
     """Converteer Enum-objecten naar hun waarde en naam."""
     if isinstance(obj, Enum):
         return obj.value, obj.name if obj.value is not None else None
     return obj, None
 
-def parse_to_unixtimestamp(ts):
+
+def convert_to_unixtimestamp(ts):
     try:
+        if not ts:
+            return None
+
         if isinstance(ts, datetime):
-            # datetime -> UNIX tijd in ms
             return int(ts.timestamp() * 1000)
+
         elif isinstance(ts, (int, float)):
-            # Max waarde van 32bit unix (19 januari 2038 om 03:14:07 UTC) dan is het waarschijnlijk sec.
-            if ts < 2147483647:
-                return int(float(ts) * 1000)
-            else:
-                return int(float(ts))
+            # Convert to ms if likely in seconds
+            return int(ts * 1000) if ts < 1e11 else int(ts)
+
         elif isinstance(ts, str) and ts.isdigit():
-            return int(float(ts) * 1000)
+            ts_int = int(ts)
+            return ts_int * 1000 if ts_int < 1e11 else ts_int
+
         else:
-            # Probeer string-parsing van datum
             dt = dup.parse(ts)
             return int(dt.timestamp() * 1000)
+
     except Exception as e:
         logger.error(f"Datum/Tijd conversie naar unixtime mislukt voor {ts}: {e}")
         return None
