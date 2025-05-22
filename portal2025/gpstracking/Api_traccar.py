@@ -76,6 +76,7 @@ class Traccar:
             for msgtype, items in data.items():
                 if isinstance(items, list):
                     for item in items:
+                        # print(msgtype, item.get("deviceId", item.get("id", None)))
                         input_message = {
                             "raw": item,
                             "msgtype": msgtype,
@@ -94,7 +95,6 @@ class Traccar:
         rawdata = mqttdata.get("raw", {})
         msgtype = mqttdata.get("msgtype")
         identtype = mqttdata.get("identtype", None)
-        print()
 
         if not all([rawdata, msgtype, identtype]):
             logger.warning("Ontbrekende velden in MQTT bericht")
@@ -113,7 +113,6 @@ class Traccar:
                     "identid": identid
                     }
 
-
         if "protocol" in rawdata:
             msgtype = f'{msgtype}_{rawdata["protocol"]}'
 
@@ -124,6 +123,8 @@ class Traccar:
         flat_data["fixTimeMs"] = convert_to_unixtimestamp(flat_data.get("fixTime", None))
         flat_data["speeds"] = convert_speed(flat_data.get("speed", 0.0), "kt")
 
+        identity["tcUniqueId"] = flat_data.get("uniqueId")
+
         mapping = get_decoder_mapping(self, identtype, msgtype)
         stdata, missing = remap_keys(flat_data, mapping)
         if missing:
@@ -133,9 +134,6 @@ class Traccar:
         if not stdata:
             logger.error(f"Geen st_data mapping voor type: {msgtype} | {flat_data}")
             return
-
-        if str(identid) == str(539):
-            print("flat", flat_data, "\n stn", stdata )
 
         msghash = genereer_hash(json.dumps(stdata))
         mqttdata["identity"] = identity

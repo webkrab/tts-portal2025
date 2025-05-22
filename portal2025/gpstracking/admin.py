@@ -283,8 +283,7 @@ class TrackerAdmin(LeafletGeoAdmin):
     meta_age_display_column.short_description = "Meta_age"
 
     def get_list_display(self, request):
-        columns = ['screen_name', 'icon']
-        columns += ['position_age_display_column', 'meta_age_display_column']
+        columns = ['id', 'screen_name', 'icon', 'meta_timestamp', 'meta_age_display_column', 'position_timestamp', 'position_age_display_column']
         types = TrackerIdentifierType.objects.all()
         for itype in types:
             safe_slug = slugify(itype.code).replace("-", "_")
@@ -333,7 +332,7 @@ class TrackerMessageAdmin(LeafletGeoAdmin):
         'tracker_identifier__external_id',
         'tracker_identifier__tracker__screen_name',
     )
-    list_filter = ('tracker_identifier', 'msgtype')
+    list_filter = ('msgtype', 'tracker_identifier__identifier_type__code')
     readonly_fields = ('sha256_key', 'message_timestamp_display')
 
     def created_at_display(self, obj):

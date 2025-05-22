@@ -134,7 +134,7 @@ class Tracker(models.Model):
     Een volgobject (tracker) met optionele AIS/ADSB eigenschappen en geografische positie.
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    screen_name = models.CharField(max_length=255)
+    screen_name = models.CharField(max_length=255, blank=True, null=True)
     icon = models.CharField(max_length=255, blank=True, null=True)
 
     ais_type = models.CharField(max_length=255, blank=True, null=True)
@@ -350,7 +350,7 @@ class TrackerDecoder(models.Model):
 
 
 class TrackerDecoderField(models.Model):
-    name = models.CharField(max_length=30, default=None, unique=True, validators=[
+    name = models.CharField(primary_key=True,max_length=30, default=None, unique=True, validators=[
             RegexValidator(
                     r'^[a-z0-9_]+$',
                     'Alleen kleine letters (a-z), cijfers (0-9) en underscores (_) zijn toegestaan.'
