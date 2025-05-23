@@ -59,20 +59,35 @@ class GpsTrackingUtilDB:
         threading.Thread(target=loop, daemon=True).start()
         GpsTrackingUtilDB.refresh_tracker_cache()
 
+
+
+
     @staticmethod
     def get_or_create_tracker_identifier(identity) -> TrackerIdentifier | None:
-        identkey = identity.get("identkey")
-        tc_unique_id = identity.get("tcUniqueId")
-        identtype = identity.get("identtype")
-        identid = identity.get("identid")
+        identkey = (v := identity.get("identkey")) and v.upper() or None
+        tc_unique_id = (v := identity.get("tcUniqueId")) and v.upper() or None
+        identtype = (v := identity.get("identtype")) and v.upper() or None
+        identid = (v := identity.get("identid")) and v.upper() or None
 
         if not identtype or not identid:
             logger.warning(f"Onvoldoende data om identifier aan te maken: {identity}")
             return None
 
         try:
-            tc_unique_id_caps = f"{tc_unique_id.upper()}" if tc_unique_id else None
-            tcuid_identkey = f"TCUID_{tc_unique_id_caps}" if tc_unique_id else None
+            tc_unique_id = f"{tc_unique_id}" if tc_unique_id else None
+
+            if tc_unique_id:
+                if tc_unique_id:
+                    tc_unique_id = tc_unique_id.replace("ADSB", "ICAO")
+                    tc_split = tc_unique_id.split("-", 1)
+                    if len(tc_split) > 1:
+                        tc_prefix, tc_ident = tc_split
+                        if tc_prefix in ["ICAO", "MMSI", "DMR", "GMS"]:
+                            identtype, identid = tc_prefix, tc_ident
+
+
+
+            tcuid_identkey = f"TCUID_{tc_unique_id}" if tc_unique_id else None
 
             # Probeer uit cache
             ti_identkey = GpsTrackingUtilDB.tracker_cache.get(identkey) if identkey else None
@@ -91,7 +106,7 @@ class GpsTrackingUtilDB:
                     TrackerIdentifier.objects.create(
                             tracker=ti_identkey.tracker,
                             identifier_type=TrackerIdentifierType.objects.get(code="TCUID"),
-                            external_id=tc_unique_id_caps,
+                            external_id=tc_unique_id,
                     )
 
             # CASE 2: tc_uid bestaat, identkey niet → voeg identkey toe
@@ -109,7 +124,7 @@ class GpsTrackingUtilDB:
             # CASE 3: Geen van beide bestaat → maak nieuwe tracker + identifiers
             if not ti_identkey and not ti_tc_uid and (identkey or tcuid_identkey):
                 tracker = Tracker.objects.create()
-                logger.debug(f"Aangemaakt nieuwe tracker {tracker.id} met identifiers: identkey={identkey}, tc_unique_id={tc_unique_id_caps}")
+                logger.debug(f"Aangemaakt nieuwe tracker {tracker.id} met identifiers: identkey={identkey}, tc_unique_id={tc_unique_id}")
                 if identkey:
                     ti_identkey = TrackerIdentifier.objects.create(
                             tracker=tracker,
@@ -120,7 +135,7 @@ class GpsTrackingUtilDB:
                     TrackerIdentifier.objects.create(
                             tracker=tracker,
                             identifier_type=TrackerIdentifierType.objects.get(code="TCUID"),
-                            external_id=tc_unique_id_caps,
+                            external_id=tc_unique_id,
                     )
 
             return ti_identkey
@@ -212,7 +227,6 @@ class GpsTrackingUtilDB:
             logger.exception(f"Fout bij verwerken van MQTT bericht: {e}")
 
     @staticmethod
-    @staticmethod
     def save_buffer_to_db():
         start = time.time()
 
@@ -263,9 +277,7 @@ class GpsTrackingUtilDB:
                         continue
 
                     if key == 'screen_name':
-                        print("key", value)
                         if not tracker.screen_name or tracker.screen_name.strip() == '':
-                            print("db", tracker.screen_name)
                             tracker.screen_name = value
                             fields_changed.add('screen_name')
                     elif key == 'icon':
@@ -273,7 +285,6 @@ class GpsTrackingUtilDB:
                             tracker.icon = value
                             fields_changed.add('icon')
                     else:
-                        print("overig", key)
                         setattr(tracker, key, value)
                         fields_changed.add(key)
 
