@@ -4,6 +4,8 @@ import time
 from collections import defaultdict
 
 from django.contrib.gis.geos import Point
+from django.db import IntegrityError
+
 from gpstracking.models import (
     Tracker,
     TrackerIdentifier,
@@ -19,6 +21,10 @@ logger = get_logger(__name__)
 
 
 class GpsTrackingUtilDB:
+    """
+    Hulpmodule voor het verwerken van GPS-tracker MQTT berichten en synchronisatie met de database.
+    """
+
     MQTT_TOPIC = "process/gpstracking"
     MQTT_CLIENT_NAME = "gpstracking_TrackerMessage"
     CACHE_REFRESH_INTERVAL = 60
@@ -51,12 +57,33 @@ class GpsTrackingUtilDB:
 
     @staticmethod
     def create_tracker_identifier(tracker: Tracker, code: str, external_id: str) -> TrackerIdentifier:
-        identifier_type = TrackerIdentifierType.objects.get(code=code)
-        return TrackerIdentifier.objects.create(
-            tracker=tracker,
-            identifier_type=identifier_type,
-            external_id=external_id,
-        )
+        """
+        Maakt een nieuwe `TrackerIdentifier` aan voor een tracker.
+        Als deze al bestaat voor dezelfde combinatie van tracker en type, wordt de bestaande teruggegeven.
+
+        Args:
+            tracker (Tracker): Het trackerobject waarvoor de identifier wordt aangemaakt.
+            code (str): De identifier type code, bv. 'ICAO', 'TCUID'.
+            external_id (str): De externe identifier (bijv. ICAO-code).
+
+        Returns:
+            TrackerIdentifier: Het nieuw aangemaakte of reeds bestaande identificatieobject.
+        """
+        try:
+            identifier_type = TrackerIdentifierType.objects.get(code=code)
+            return TrackerIdentifier.objects.create(
+                tracker=tracker,
+                identifier_type=identifier_type,
+                external_id=external_id,
+            )
+        except IntegrityError:
+            logger.warning(
+                f"Identifier voor tracker '{tracker.id}|{tracker.screen_name}' en type '{code}' bestaat al. Probeer bestaande op te halen."
+            )
+            return TrackerIdentifier.objects.filter(
+                tracker=tracker,
+                identifier_type=identifier_type,
+            ).first()
 
     @staticmethod
     def additional_identifiers_from_uniqueId(uniqueId: str, tracker):
@@ -143,6 +170,12 @@ class GpsTrackingUtilDB:
 
     @staticmethod
     def process_mqtt_message(message_str: str):
+        """
+        Verwerkt een MQTT-bericht en voegt deze toe aan de buffer.
+
+        Args:
+            message_str (str): JSON-string van het MQTT-bericht
+        """
         try:
             msg = json.loads(message_str)
             data = msg.get("data", {})
@@ -199,7 +232,7 @@ class GpsTrackingUtilDB:
                     else:
                         for k, v in tracker_entry.items():
                             if k not in existing or (
-                                k in ["altitude", "speed", "heading", "position", "position_timestamp"]
+                                k in ["altitude", "speed", "course", "position", "position_timestamp"]
                                 and (existing.get("position_timestamp") is None or existing["position_timestamp"] <= position_ts)
                             ) or (
                                 existing.get("meta_timestamp") is None or existing["meta_timestamp"] <= meta_ts
@@ -209,20 +242,31 @@ class GpsTrackingUtilDB:
         except Exception as e:
             logger.exception(f"Fout bij verwerken van MQTT bericht: {e}")
 
+
     @staticmethod
     def save_buffer_to_db():
+        """
+        Slaat gebufferde trackerberichten en trackerstatussen op in de database.
+        """
         start = time.time()
+
+        # === TrackerMessages verwerken ===
         with GpsTrackingUtilDB.buffer_lock_msg:
             msg_items = list(GpsTrackingUtilDB.message_buffer.values())
             GpsTrackingUtilDB.message_buffer.clear()
 
         if msg_items:
-            TrackerMessage.objects.bulk_create([TrackerMessage(**item) for item in msg_items], ignore_conflicts=True)
+            TrackerMessage.objects.bulk_create(
+                    [TrackerMessage(**item) for item in msg_items],
+                    ignore_conflicts=True
+            )
             logger.info(f"{len(msg_items)} tracker.messages opgeslagen ({round(time.time() - start, 3)}s)")
         else:
-            logger.warning("0 tracker.messages opgeslagen")
+            logger.info("0 tracker.messages opgeslagen")
 
         start = time.time()
+
+        # === Tracker status-updates verwerken ===
         with GpsTrackingUtilDB.buffer_lock_tracker:
             tracker_items = list(GpsTrackingUtilDB.tracker_buffer.values())
             GpsTrackingUtilDB.tracker_buffer.clear()
@@ -238,38 +282,52 @@ class GpsTrackingUtilDB:
                 tracker = existing_trackers.get(item['id'])
                 if not tracker:
                     continue
+
                 changed = set()
                 for key, val in item.items():
                     if key == 'id' or key not in valid_fields:
                         continue
-                    if key in ['screen_name', 'icon'] and (not getattr(tracker, key)):
+
+                    if key in ['screen_name', 'icon']:
+                        current_value = getattr(tracker, key)
+                        if current_value is None or str(current_value).strip() == "":  #Wanneer None of empty string
+                            setattr(tracker, key, val)
+                            changed.add(key)
+                    else:
                         setattr(tracker, key, val)
                         changed.add(key)
-                    elif key not in ['screen_name', 'icon']:
-                        setattr(tracker, key, val)
-                        changed.add(key)
+
                 if changed:
                     updated_trackers.append(tracker)
                     fields_per_tracker[tracker.pk] = changed
 
-            for fields, group in defaultdict(list, {
-                frozenset(fields_per_tracker[t.pk]): [t for t in updated_trackers if frozenset(fields_per_tracker[t.pk]) == fields]
-                for t in updated_trackers
-            }).items():
+            # === Groepeer per unieke veldenset ===
+            from collections import defaultdict
+            grouped = defaultdict(list)
+            for tracker in updated_trackers:
+                fieldset = frozenset(fields_per_tracker[tracker.pk])
+                grouped[fieldset].append(tracker)
+
+            # === Bulk update per veldenset ===
+            for fieldset, group in grouped.items():
                 try:
-                    Tracker.objects.bulk_update(group, list(fields))
+                    Tracker.objects.bulk_update(group, list(fieldset))
+                    logger.info(f"{len(group)} tracker.trackers bulk-geüpdatet met velden: {list(fieldset)}.")
                 except Exception as e:
-                    logger.exception(f"Fout bij bulk_update: {e}")
+                    logger.exception(f"Fout bij bulk_update van trackers voor veldenset {fieldset}: {e}")
                     for t in group:
                         try:
-                            t.save(update_fields=list(fields))
+                            t.save(update_fields=list(fieldset))
                         except Exception as ex:
-                            logger.exception(f"Individuele save fout: {ex}")
+                            logger.exception(f"Fout bij individuele save van tracker {t.id}: {ex}")
         else:
-            logger.warning("0 tracker.trackers opgeslagen")
+            logger.info("0 tracker.trackers opgeslagen")
 
     @staticmethod
     def start_save_loop():
+        """
+        Start een achtergrondproces dat periodiek de buffers opslaat in de database.
+        """
         def loop():
             while True:
                 time.sleep(GpsTrackingUtilDB.SAVE_INTERVAL)
@@ -279,6 +337,9 @@ class GpsTrackingUtilDB:
 
     @staticmethod
     def start_mqtt_subscriber():
+        """
+        Start de MQTT-subscriber en koppel het berichtverwerkingssysteem.
+        """
         client = TTSmqtt.start_subscriber(GpsTrackingUtilDB.MQTT_CLIENT_NAME, GpsTrackingUtilDB.MQTT_TOPIC)
         if not client:
             logger.error("Kon MQTT-subscriber niet starten.")

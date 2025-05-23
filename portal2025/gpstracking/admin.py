@@ -209,15 +209,37 @@ class TrackerIdentifierInline(admin.TabularInline):
     model = TrackerIdentifier
     form = TrackerIdentifierInlineForm
     extra = 1
-    readonly_fields = ('identkey', 'linked_groups')
+    readonly_fields = ('identkey', 'linked_groups', 'latest_message_timestamp', 'latest_message_age_in_sec')
+    fields = ('identifier_type', 'external_id', 'identkey', 'linked_groups', 'latest_message_timestamp', 'latest_message_age_in_sec')
 
     def linked_groups(self, obj):
         if not obj.pk:
             return "-"
         return ", ".join(g.name for g in obj.identifier_type.groups.all())
-
     linked_groups.short_description = "Automatisch gekoppelde groepen"
 
+    def latest_message_timestamp(self, obj):
+        message = obj.messages.order_by('-message_timestamp').first()
+        return message.message_timestamp_display if message else "-"
+    latest_message_timestamp.short_description = "Laatst seen"
+
+    def latest_message_age_in_sec(self, obj):
+        message = obj.messages.order_by('-message_timestamp').first()
+        if not message or not message.age_in_sec:
+            return "-"
+        total_seconds = message.age_in_sec // 1000
+        days, remainder = divmod(total_seconds, 86400)
+        hours, remainder = divmod(remainder, 3600)
+        minutes, seconds = divmod(remainder, 60)
+
+        parts = []
+        if days: parts.append(f"{days}d")
+        if hours: parts.append(f"{hours}h")
+        if minutes: parts.append(f"{minutes}m")
+        if seconds or not parts: parts.append(f"{seconds}s")
+        return ' '.join(parts)
+
+    latest_message_age_in_sec.short_description = "Last seen age"
 
 class TrackerInline(admin.TabularInline):
     model = Tracker.groups.through
@@ -276,7 +298,7 @@ class TrackerAdmin(LeafletGeoAdmin):
     list_filter = ('identifiers__identifier_type', 'groups')
     filter_horizontal = ('groups',)
     inlines = [TrackerIdentifierInline]
-    readonly_fields = ('inferred_group_list', 'position_timestamp_display')
+    readonly_fields = ('inferred_group_list', 'meta_timestamp_display', 'position_timestamp_display')
 
     def inferred_group_list(self, obj):
         groups = TrackerGroup.objects.filter(
@@ -297,13 +319,20 @@ class TrackerAdmin(LeafletGeoAdmin):
 
     position_age_display_column.short_description = "Position_age"
 
+
+    def meta_timestamp_display(self, obj):
+        return obj.meta_timestamp_display
+
+    meta_timestamp_display.short_description = "Meta_time"
+    meta_timestamp_display.admin_order_field = 'meta_timestamp'
+
     def meta_age_display_column(self, obj):
         return obj.meta_age_display or "-"
 
     meta_age_display_column.short_description = "Meta_age"
 
     def get_list_display(self, request):
-        columns = ['id', 'screen_name', 'icon', 'meta_timestamp', 'meta_age_display_column', 'position_timestamp', 'position_age_display_column']
+        columns = ['id', 'screen_name', 'icon', 'meta_timestamp_display', 'meta_age_display_column', 'position_timestamp_display', 'position_age_display_column']
         types = TrackerIdentifierType.objects.all().order_by("code")
         for itype in types:
             safe_slug = slugify(itype.code).replace("-", "_")
@@ -324,10 +353,54 @@ class TrackerAdmin(LeafletGeoAdmin):
 @admin.register(TrackerIdentifier)
 class TrackerIdentifierAdmin(admin.ModelAdmin):
     form = TrackerIdentifierAdminForm
-    list_display = ('identkey', 'tracker', 'identifier_type', 'external_id')
-    search_fields = ('identifier_type__code', 'external_id', 'identkey', 'tracker__screen_name')
+    list_display = (
+        'identkey',
+        'tracker',
+        'identifier_type',
+        'external_id',
+        'latest_message_timestamp',
+        'latest_message_age_in_sec',
+    )
+    search_fields = (
+        'identifier_type__code',
+        'external_id',
+        'identkey',
+        'tracker__screen_name',
+    )
     list_filter = ('identifier_type__code',)
     readonly_fields = ('identkey',)
+
+    def latest_message_timestamp(self, obj):
+        """
+        Laat de timestamp van het laatste bericht zien.
+        """
+        message = obj.messages.order_by('-message_timestamp').first()
+        return message.message_timestamp_display if message else "-"
+    latest_message_timestamp.short_description = "Last seen"
+
+    def latest_message_age_in_sec(self, obj):
+        """
+        Laat de leeftijd in ms zien van het laatste bericht.
+        """
+        message = obj.messages.order_by('-message_timestamp').first()
+        if not message or not message.age_in_sec:
+            return "-"
+        total_seconds = message.age_in_sec // 1000
+        days, remainder = divmod(total_seconds, 86400)
+        hours, remainder = divmod(remainder, 3600)
+        minutes, seconds = divmod(remainder, 60)
+
+        parts = []
+        if days: parts.append(f"{days}d")
+        if hours: parts.append(f"{hours}h")
+        if minutes: parts.append(f"{minutes}m")
+        if seconds or not parts: parts.append(f"{seconds}s")
+        return ' '.join(parts)
+
+
+
+    latest_message_age_in_sec.short_description = "Last seen age"
+
 
 
 @admin.register(TrackerGroup)

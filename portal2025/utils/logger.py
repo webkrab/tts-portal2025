@@ -91,8 +91,8 @@ def get_logger(name, log_file="logs/app.log", db_path="logs/app_logs.db"):
     # SQLite handler
     sh = SQLiteHandler(db_path=db_path)
 
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    #formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(funcName)s - %(message)s')
+    #formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s  - [%(filename)s:%(lineno)d] - %(funcName)s - %(message)s')
 
     ch.setFormatter(formatter)
     fh.setFormatter(formatter)

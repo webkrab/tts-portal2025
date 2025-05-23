@@ -11,6 +11,7 @@ from django.db.models import UniqueConstraint
 from django.utils.functional import lazy
 from django.utils.translation import gettext_lazy as _
 
+
 def default_tracker_area():
     """
     Geeft een standaardgebied (grofweg Nederland) terug als MultiPolygon.
@@ -44,9 +45,9 @@ def get_tracker_field_choices():
     """
     extra_fields = ["age_in_sec", "age_human", "ais_dimensions"]
     model_fields = [
-        (field.name, field.name)
-        for field in Tracker._meta.get_fields()
-        if isinstance(field, models.Field) and field.concrete and not field.auto_created
+            (field.name, field.name)
+            for field in Tracker._meta.get_fields()
+            if isinstance(field, models.Field) and field.concrete and not field.auto_created
     ]
     all_fields = model_fields + [(field, field) for field in extra_fields]
     return model_fields, all_fields
@@ -95,9 +96,13 @@ class TrackerGroup(models.Model):
     Groepering van trackers, eventueel met afgebakend gebied en zichtbare velden.
     """
     smartcode = models.CharField(
-            max_length=10,
+            max_length=25,
             unique=True,
-            validators=[RegexValidator(r'^[a-z0-9]+$', 'Alleen kleine letters (a-z) en cijfers (0-9) zijn toegestaan.')]
+            validators=[
+                    RegexValidator(
+                            r'^[a-z0-9_]+$',
+                            'Alleen kleine letters (a-z), cijfers (0-9) en underscores (_) zijn toegestaan.'
+                    )]
     )
     name = models.CharField(max_length=255, unique=True)
     area = gis_models.MultiPolygonField(
@@ -161,7 +166,7 @@ class Tracker(models.Model):
 
     altitude = models.FloatField(blank=True, null=True)
     speed = models.FloatField(blank=True, null=True)
-    heading = models.FloatField(blank=True, null=True)
+    course = models.FloatField(blank=True, null=True)
     position = gis_models.PointField(geography=True, blank=True, null=True, srid=4326)
     position_timestamp = models.BigIntegerField(blank=True, null=True, help_text="UNIX tijd in ms")
 
@@ -256,11 +261,10 @@ class TrackerIdentifier(models.Model):
     class Meta:
         constraints = [
                 UniqueConstraint(fields=['external_id', 'identifier_type'], name='unique_external_id_per_type'),
-                UniqueConstraint(fields=['tracker', 'identifier_type'], name='unique_tracker_per_type'),
+
         ]
 
         ordering = ['identkey']
-
 
     def save(self, *args, **kwargs):
         """
@@ -286,15 +290,17 @@ class TrackerMessage(models.Model):
     """
     tracker_identifier = models.ForeignKey(TrackerIdentifier, on_delete=models.CASCADE, related_name='messages')
     msgtype = models.CharField(max_length=30, default=None)
+    sha256_key = models.CharField(max_length=64, blank=True, null=True, unique=True)
     content = models.JSONField()
     dbcall = models.JSONField(blank=True, null=True)
     raw = models.JSONField(blank=True, null=True)
     message_timestamp = models.BigIntegerField(help_text="UNIX tijd in milliseconden (UTC)")
     position = gis_models.PointField(geography=True, blank=True, null=True, srid=4326)
-    sha256_key = models.CharField(max_length=64, blank=True, null=True, unique=True)
+    position_timestamp = models.BigIntegerField(blank=True, null=True, help_text="UNIX tijd in ms")
 
     class Meta:
         ordering = ['-message_timestamp']
+
     @property
     def message_timestamp_display(self):
         """
@@ -353,15 +359,15 @@ class TrackerDecoder(models.Model):
     msgtype = models.CharField(max_length=30, default=None)
     mapping = models.JSONField(default=dict, blank=True)
 
-
     class Meta:
         ordering = ['identifier_type__code', 'msgtype']
+
     def __str__(self):
         return f"{self.identifier_type.code} - {self.msgtype}"
 
 
 class TrackerDecoderField(models.Model):
-    name = models.CharField(primary_key=True,max_length=30, default=None, unique=True, validators=[
+    name = models.CharField(primary_key=True, max_length=30, default=None, unique=True, validators=[
             RegexValidator(
                     r'^[a-z0-9_]+$',
                     'Alleen kleine letters (a-z), cijfers (0-9) en underscores (_) zijn toegestaan.'
