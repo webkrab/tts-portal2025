@@ -132,7 +132,7 @@ class Nmea:
                             continue
 
                         if msg_type not in [1, 2, 3, 4, 5, 18, 19, 21]:
-                            print(f"{msg_type = } | {decoded_payload = }")
+                            logger.info(f"{msg_type = } | {decoded_payload = }")
 
                         new_payload = Nmea.remap_payload(msg_type, decoded_payload, msg, payload, received)
                         if new_payload:

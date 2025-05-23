@@ -1,3 +1,6 @@
+from utils.logger import get_logger
+logger = get_logger(__name__)
+
 from gpstracking.models import TrackerDecoder, TrackerIdentifierType
 def get_decoder_mapping(self, identtype, msgtype):
     """Haalt mapping uit cache of DB bij eerste gebruik"""

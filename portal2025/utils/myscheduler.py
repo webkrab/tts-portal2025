@@ -1,3 +1,5 @@
+from utils.logger import get_logger
+logger = get_logger(__name__)
 import time
 import json
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -10,7 +12,7 @@ def start_mqtt_task():
     publish_message = start_publisher("test_publisher", "in/ais/test/nmea")
 
     if not publish_message:
-        print("Fout bij starten MQTT-publisher. Taak niet gestart.")
+        logger.info("Fout bij starten MQTT-publisher. Taak niet gestart.")
         return
 
     def publish_periodically():
@@ -26,7 +28,7 @@ def start_mqtt_task():
 
         message_json = json.dumps(message_payload)  # JSON string maken
         publish_message(message_json)  # Bericht publiceren
-        print(f"Verzonden: {message_json}")  # Debug print
+        logger.info(f"Verzonden: {message_json}")  # Debug prin)
 
     scheduler = BackgroundScheduler()
     scheduler.add_job(
@@ -38,4 +40,4 @@ def start_mqtt_task():
     )
 
     scheduler.start()
-    print("Scheduler gestart voor periodieke publicatie.")
+    logger.info("Scheduler gestart voor periodieke publicatie.")
