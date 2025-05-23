@@ -1,0 +1,1300 @@
+[
+{
+  "model": "auth.user",
+  "pk": 2,
+  "fields": {
+    "password": "pbkdf2_sha256$870000$HN3Wjw539DyvJXZsDIZ1iT$YQYOBbCc/NWhqhVT+vAslP/MugGLU0j8kAuTzKJ3O14=",
+    "last_login": null,
+    "is_superuser": true,
+    "username": "fwater",
+    "first_name": "",
+    "last_name": "",
+    "email": "f.vandewater@thetrackingsolution.nl",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2025-05-23T20:25:11.586Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 3,
+  "fields": {
+    "password": "pbkdf2_sha256$870000$E9WOzIUfCTdDrCinCP26qe$cswuwrPHvaLNNkWslCMYaC23aliEDIly6xdrNdQ4pzc=",
+    "last_login": "2025-05-23T20:27:22.201Z",
+    "is_superuser": true,
+    "username": "camende",
+    "first_name": "",
+    "last_name": "",
+    "email": "c.amende@thetrackingsolution.nl",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2025-05-23T20:26:40.094Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 4,
+  "fields": {
+    "password": "pbkdf2_sha256$870000$1oJwVxFgezU7MzWQojAtcL$FJJRSVdNGUyFDLurLf6evN3BJdfnNF+aeh+FuBqSWy8=",
+    "last_login": null,
+    "is_superuser": true,
+    "username": "bheijselaar",
+    "first_name": "",
+    "last_name": "",
+    "email": "b.heijselaar@thetrackingsolution.nl",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2025-05-23T20:27:11.678Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "wiuchz3hf9aco7dh09orlm22paefzslt",
+  "fields": {
+    "session_data": ".eJxVjEEOwiAQRe_C2hCggODSvWcgDDMjVUOT0q6MdzckXej2v_f-W6S8bzXtndY0o7iISZx-N8jlSW0AfOR2X2RZ2rbOIIciD9rlbUF6XQ_376DmXkeNxiKxA-SJSStkLmgUl-wsanUGQxwjOaUhRA-WAnhv2ARXSBsk8fkCLa85VQ:1uIYzg:K1blcE9RH8gtHrmAGA7NcAkr_SomJomp8ojHRI38lAQ",
+    "expire_date": "2025-06-06T20:27:52.348Z"
+  }
+},
+{
+  "model": "gpstracking.trackeridentifiertype",
+  "pk": "DMR",
+  "fields": {
+    "description": "DMR"
+  }
+},
+{
+  "model": "gpstracking.trackeridentifiertype",
+  "pk": "GMS",
+  "fields": {
+    "description": "Gemeenschappelijk Meldkamer Systeem"
+  }
+},
+{
+  "model": "gpstracking.trackeridentifiertype",
+  "pk": "ICAO",
+  "fields": {
+    "description": "ICAO | Luchtvaart"
+  }
+},
+{
+  "model": "gpstracking.trackeridentifiertype",
+  "pk": "MMSI",
+  "fields": {
+    "description": "MMSI | Scheepvaart"
+  }
+},
+{
+  "model": "gpstracking.trackeridentifiertype",
+  "pk": "TC1",
+  "fields": {
+    "description": "Traccar | Server 1"
+  }
+},
+{
+  "model": "gpstracking.trackeridentifiertype",
+  "pk": "TC2",
+  "fields": {
+    "description": "Traccar | Server 2"
+  }
+},
+{
+  "model": "gpstracking.trackeridentifiertype",
+  "pk": "TCUID",
+  "fields": {
+    "description": "Traccar UniqueId"
+  }
+},
+{
+  "model": "gpstracking.trackergroup",
+  "pk": 1,
+  "fields": {
+    "smartcode": "bheijselaar",
+    "name": "Bas Heijselaar",
+    "area": null,
+    "visible_fields": [
+      "id",
+      "screen_name",
+      "icon",
+      "altitude",
+      "speed",
+      "course",
+      "position",
+      "position_timestamp",
+      "age_in_sec",
+      "age_human"
+    ],
+    "identifier_types": []
+  }
+},
+{
+  "model": "gpstracking.trackergroup",
+  "pk": 2,
+  "fields": {
+    "smartcode": "camende",
+    "name": "Cris",
+    "area": null,
+    "visible_fields": [
+      "id",
+      "screen_name",
+      "icon",
+      "altitude",
+      "speed",
+      "course",
+      "position",
+      "position_timestamp",
+      "age_in_sec",
+      "age_human"
+    ],
+    "identifier_types": []
+  }
+},
+{
+  "model": "gpstracking.trackergroup",
+  "pk": 3,
+  "fields": {
+    "smartcode": "demo",
+    "name": "Demo",
+    "area": null,
+    "visible_fields": [
+      "id",
+      "screen_name",
+      "icon",
+      "altitude",
+      "speed",
+      "course",
+      "position",
+      "position_timestamp",
+      "age_in_sec",
+      "age_human"
+    ],
+    "identifier_types": []
+  }
+},
+{
+  "model": "gpstracking.trackergroup",
+  "pk": 4,
+  "fields": {
+    "smartcode": "essn",
+    "name": "ESSN",
+    "area": null,
+    "visible_fields": [
+      "id",
+      "screen_name",
+      "icon",
+      "altitude",
+      "speed",
+      "course",
+      "position",
+      "position_timestamp",
+      "age_in_sec",
+      "age_human"
+    ],
+    "identifier_types": []
+  }
+},
+{
+  "model": "gpstracking.trackergroup",
+  "pk": 5,
+  "fields": {
+    "smartcode": "fwater",
+    "name": "Fred",
+    "area": null,
+    "visible_fields": [
+      "id",
+      "screen_name",
+      "icon",
+      "altitude",
+      "speed",
+      "course",
+      "position",
+      "position_timestamp",
+      "age_in_sec",
+      "age_human"
+    ],
+    "identifier_types": []
+  }
+},
+{
+  "model": "gpstracking.trackergroup",
+  "pk": 7,
+  "fields": {
+    "smartcode": "knrm",
+    "name": "KNRM",
+    "area": null,
+    "visible_fields": [
+      "id",
+      "screen_name",
+      "icon",
+      "altitude",
+      "speed",
+      "course",
+      "position",
+      "position_timestamp",
+      "age_in_sec",
+      "age_human"
+    ],
+    "identifier_types": []
+  }
+},
+{
+  "model": "gpstracking.trackergroup",
+  "pk": 8,
+  "fields": {
+    "smartcode": "knrm_sch",
+    "name": "KNRM Scheveningen",
+    "area": null,
+    "visible_fields": [
+      "id",
+      "screen_name",
+      "icon",
+      "altitude",
+      "speed",
+      "course",
+      "position",
+      "position_timestamp",
+      "age_in_sec",
+      "age_human"
+    ],
+    "identifier_types": []
+  }
+},
+{
+  "model": "gpstracking.trackergroup",
+  "pk": 9,
+  "fields": {
+    "smartcode": "knrm_teh",
+    "name": KNRM Ter Heijden",
+    "area": null,
+    "visible_fields": [
+      "id",
+      "screen_name",
+      "icon",
+      "altitude",
+      "speed",
+      "course",
+      "position",
+      "position_timestamp",
+      "age_in_sec",
+      "age_human"
+    ],
+    "identifier_types": []
+  }
+},
+{
+  "model": "gpstracking.trackergroup",
+  "pk": 10,
+  "fields": {
+    "smartcode": "rb",
+    "name": "Reddingsbrigade",
+    "area": null,
+    "visible_fields": [
+      "id",
+      "screen_name",
+      "icon",
+      "altitude",
+      "speed",
+      "course",
+      "position",
+      "position_timestamp",
+      "age_in_sec",
+      "age_human"
+    ],
+    "identifier_types": []
+  }
+},
+{
+  "model": "gpstracking.trackergroup",
+  "pk": 11,
+  "fields": {
+    "smartcode": "rb_dhg",
+    "name": "RB Den Haag",
+    "area": null,
+    "visible_fields": [
+      "id",
+      "screen_name",
+      "icon",
+      "altitude",
+      "speed",
+      "course",
+      "position",
+      "position_timestamp",
+      "age_in_sec",
+      "age_human"
+    ],
+    "identifier_types": []
+  }
+},
+{
+  "model": "gpstracking.trackergroup",
+  "pk": 12,
+  "fields": {
+    "smartcode": "rb_gve",
+    "name": "RB 's Gravenzande",
+    "area": null,
+    "visible_fields": [
+      "id",
+      "screen_name",
+      "icon",
+      "altitude",
+      "speed",
+      "course",
+      "position",
+      "position_timestamp",
+      "age_in_sec",
+      "age_human"
+    ],
+    "identifier_types": []
+  }
+},
+{
+  "model": "gpstracking.trackergroup",
+  "pk": 13,
+  "fields": {
+    "smartcode": "rb_hhw",
+    "name": "RB Dijk en waard",
+    "area": null,
+    "visible_fields": [
+      "id",
+      "screen_name",
+      "icon",
+      "altitude",
+      "speed",
+      "course",
+      "position",
+      "position_timestamp",
+      "age_in_sec",
+      "age_human"
+    ],
+    "identifier_types": []
+  }
+},
+{
+  "model": "gpstracking.trackergroup",
+  "pk": 14,
+  "fields": {
+    "smartcode": "rb_hsk",
+    "name": "RB HSK",
+    "area": null,
+    "visible_fields": [
+      "id",
+      "screen_name",
+      "icon",
+      "altitude",
+      "speed",
+      "course",
+      "position",
+      "position_timestamp",
+      "age_in_sec",
+      "age_human"
+    ],
+    "identifier_types": []
+  }
+},
+{
+  "model": "gpstracking.trackergroup",
+  "pk": 15,
+  "fields": {
+    "smartcode": "rb_msr",
+    "name": "RB Monster",
+    "area": null,
+    "visible_fields": [
+      "id",
+      "screen_name",
+      "icon",
+      "altitude",
+      "speed",
+      "course",
+      "position",
+      "position_timestamp",
+      "age_in_sec",
+      "age_human"
+    ],
+    "identifier_types": []
+  }
+},
+{
+  "model": "gpstracking.trackergroup",
+  "pk": 16,
+  "fields": {
+    "smartcode": "rb_oefen",
+    "name": "RB Oefening",
+    "area": null,
+    "visible_fields": [
+      "id",
+      "screen_name",
+      "icon",
+      "altitude",
+      "speed",
+      "course",
+      "position",
+      "position_timestamp",
+      "age_in_sec",
+      "age_human"
+    ],
+    "identifier_types": []
+  }
+},
+{
+  "model": "gpstracking.trackergroup",
+  "pk": 17,
+  "fields": {
+    "smartcode": "rb_rkj",
+    "name": "RB Rockanje",
+    "area": null,
+    "visible_fields": [
+      "id",
+      "screen_name",
+      "icon",
+      "altitude",
+      "speed",
+      "course",
+      "position",
+      "position_timestamp",
+      "age_in_sec",
+      "age_human"
+    ],
+    "identifier_types": []
+  }
+},
+{
+  "model": "gpstracking.trackergroup",
+  "pk": 18,
+  "fields": {
+    "smartcode": "rb_rkj_mob",
+    "name": "RB Rockanje MOB",
+    "area": null,
+    "visible_fields": [
+      "id",
+      "screen_name",
+      "icon",
+      "altitude",
+      "speed",
+      "course",
+      "position",
+      "position_timestamp",
+      "age_in_sec",
+      "age_human"
+    ],
+    "identifier_types": []
+  }
+},
+{
+  "model": "gpstracking.trackergroup",
+  "pk": 19,
+  "fields": {
+    "smartcode": "rb_waz",
+    "name": "RB Wijk aan Zee",
+    "area": null,
+    "visible_fields": [
+      "id",
+      "screen_name",
+      "icon",
+      "altitude",
+      "speed",
+      "course",
+      "position",
+      "position_timestamp",
+      "age_in_sec",
+      "age_human"
+    ],
+    "identifier_types": []
+  }
+},
+{
+  "model": "gpstracking.trackergroup",
+  "pk": 20,
+  "fields": {
+    "smartcode": "rb_wsc",
+    "name": "SRB Westerschouwen",
+    "area": null,
+    "visible_fields": [
+      "id",
+      "screen_name",
+      "icon",
+      "altitude",
+      "speed",
+      "course",
+      "position",
+      "position_timestamp",
+      "age_in_sec",
+      "age_human"
+    ],
+    "identifier_types": []
+  }
+},
+{
+  "model": "gpstracking.trackergroup",
+  "pk": 21,
+  "fields": {
+    "smartcode": "vr",
+    "name": "Veiligheidsregio",
+    "area": null,
+    "visible_fields": [
+      "id",
+      "screen_name",
+      "icon",
+      "altitude",
+      "speed",
+      "course",
+      "position",
+      "position_timestamp",
+      "age_in_sec",
+      "age_human"
+    ],
+    "identifier_types": []
+  }
+},
+{
+  "model": "gpstracking.trackergroup",
+  "pk": 22,
+  "fields": {
+    "smartcode": "vr-zld",
+    "name": "Veilighiedsregio Zeeland",
+    "area": null,
+    "visible_fields": [
+      "id",
+      "screen_name",
+      "icon",
+      "altitude",
+      "speed",
+      "course",
+      "position",
+      "position_timestamp",
+      "age_in_sec",
+      "age_human"
+    ],
+    "identifier_types": []
+  }
+},
+{
+  "model": "gpstracking.trackerdecoder",
+  "pk": 1,
+  "fields": {
+    "identifier_type": "TC1",
+    "msgtype": "devices",
+    "mapping": {
+      "id": null,
+      "name": "screenname",
+      "model": null,
+      "phone": null,
+      "status": null,
+      "contact": null,
+      "groupId": "tc_group",
+      "category": "icon",
+      "disabled": null,
+      "uniqueId": null,
+      "fixTimeMs": null,
+      "speeds.kt": null,
+      "calendarId": null,
+      "lastUpdate": null,
+      "positionId": null,
+      "speeds.bft": null,
+      "speeds.m/s": null,
+      "geofenceIds": null,
+      "speeds.km/h": null,
+      "deviceTimeMs": null,
+      "lastUpdateMs": "meta_timestamp",
+      "serverTimeMs": null,
+      "expirationTime": null,
+      "attributes.web.reportColor": null,
+      "attributes.report.ignoreOdometer": null
+    }
+  }
+},
+{
+  "model": "gpstracking.trackerdecoder",
+  "pk": 2,
+  "fields": {
+    "identifier_type": "TC1",
+    "msgtype": "positions_h02",
+    "mapping": {
+      "id": null,
+      "speed": null,
+      "valid": null,
+      "course": "course",
+      "address": null,
+      "fixTime": null,
+      "network": null,
+      "accuracy": null,
+      "altitude": "altitude",
+      "deviceId": null,
+      "latitude": "latitude",
+      "outdated": null,
+      "protocol": null,
+      "fixTimeMs": "position_timestamp",
+      "longitude": "longitude",
+      "speeds.kt": null,
+      "deviceTime": null,
+      "serverTime": null,
+      "speeds.bft": null,
+      "speeds.m/s": null,
+      "geofenceIds": null,
+      "speeds.km/h": "speed_kmh",
+      "deviceTimeMs": null,
+      "lastUpdateMs": null,
+      "serverTimeMs": null,
+      "attributes.io1": null,
+      "attributes.io2": null,
+      "attributes.io3": null,
+      "attributes.io4": null,
+      "attributes.io5": null,
+      "attributes.alarm": null,
+      "attributes.hours": null,
+      "attributes.motion": null,
+      "attributes.status": null,
+      "attributes.distance": null,
+      "attributes.ignition": null,
+      "attributes.totalDistance": null
+    }
+  }
+},
+{
+  "model": "gpstracking.trackerdecoder",
+  "pk": 3,
+  "fields": {
+    "identifier_type": "TC2",
+    "msgtype": "positions_h02",
+    "mapping": {
+      "id": null,
+      "speed": null,
+      "valid": null,
+      "course": "richting",
+      "speeds": null,
+      "address": null,
+      "fixTime": null,
+      "network": null,
+      "accuracy": null,
+      "altitude": "altitude",
+      "deviceId": null,
+      "latitude": "latitude",
+      "outdated": null,
+      "protocol": null,
+      "fixTimeMs": "positie_tijdstip",
+      "longitude": "longitude",
+      "speeds.kt": null,
+      "deviceTime": null,
+      "serverTime": null,
+      "speeds.bft": null,
+      "speeds.m/s": null,
+      "geofenceIds": null,
+      "speeds.km/h": "snelheid_kmh",
+      "deviceTimeMs": null,
+      "lastUpdateMs": null,
+      "serverTimeMs": null,
+      "attributes.io1": null,
+      "attributes.io2": null,
+      "attributes.io3": null,
+      "attributes.io4": null,
+      "attributes.io5": null,
+      "attributes.alarm": null,
+      "attributes.hours": null,
+      "attributes.motion": null,
+      "attributes.status": null,
+      "attributes.distance": null,
+      "attributes.ignition": null,
+      "attributes.totalDistance": null
+    }
+  }
+},
+{
+  "model": "gpstracking.trackerdecoder",
+  "pk": 4,
+  "fields": {
+    "identifier_type": "TC2",
+    "msgtype": "positions_teltonika",
+    "mapping": {
+      "id": null,
+      "speed": null,
+      "valid": null,
+      "course": "richting",
+      "speeds": null,
+      "address": null,
+      "fixTime": null,
+      "network": null,
+      "accuracy": null,
+      "altitude": "altitude",
+      "deviceId": null,
+      "latitude": "latitude",
+      "outdated": null,
+      "protocol": null,
+      "fixTimeMs": "positie_tijdstip",
+      "longitude": "longitude",
+      "speeds.kt": null,
+      "deviceTime": null,
+      "serverTime": null,
+      "speeds.bft": null,
+      "speeds.m/s": null,
+      "geofenceIds": null,
+      "speeds.km/h": "snelheid_kmh",
+      "deviceTimeMs": null,
+      "lastUpdateMs": null,
+      "serverTimeMs": null,
+      "attributes.sat": null,
+      "attributes.hdop": null,
+      "attributes.io11": null,
+      "attributes.io14": null,
+      "attributes.io24": null,
+      "attributes.io31": null,
+      "attributes.io32": null,
+      "attributes.io35": null,
+      "attributes.io36": null,
+      "attributes.io37": null,
+      "attributes.io39": null,
+      "attributes.io68": null,
+      "attributes.io69": null,
+      "attributes.io80": null,
+      "attributes.pdop": null,
+      "attributes.rssi": null,
+      "attributes.axisX": null,
+      "attributes.axisY": null,
+      "attributes.axisZ": null,
+      "attributes.event": null,
+      "attributes.hours": null,
+      "attributes.io113": null,
+      "attributes.io200": null,
+      "attributes.io205": null,
+      "attributes.io206": null,
+      "attributes.io237": null,
+      "attributes.io238": null,
+      "attributes.io263": null,
+      "attributes.power": null,
+      "attributes.motion": null,
+      "attributes.battery": null,
+      "attributes.distance": null,
+      "attributes.ignition": null,
+      "attributes.odometer": null,
+      "attributes.operator": null,
+      "attributes.priority": null,
+      "attributes.tripOdometer": null,
+      "attributes.totalDistance": null
+    }
+  }
+},
+{
+  "model": "gpstracking.trackerdecoder",
+  "pk": 5,
+  "fields": {
+    "identifier_type": "TC1",
+    "msgtype": "positions_teltonika",
+    "mapping": {
+      "id": null,
+      "speed": null,
+      "valid": null,
+      "course": "course",
+      "address": null,
+      "fixTime": null,
+      "network": null,
+      "accuracy": null,
+      "altitude": "altitude",
+      "deviceId": null,
+      "latitude": "latitude",
+      "outdated": null,
+      "protocol": null,
+      "fixTimeMs": "position_timestamp",
+      "longitude": "longitude",
+      "speeds.kt": null,
+      "deviceTime": null,
+      "serverTime": null,
+      "speeds.bft": null,
+      "speeds.m/s": null,
+      "geofenceIds": null,
+      "speeds.km/h": "speed_kmh",
+      "deviceTimeMs": null,
+      "lastUpdateMs": null,
+      "serverTimeMs": null,
+      "attributes.sat": null,
+      "attributes.hdop": null,
+      "attributes.io11": null,
+      "attributes.io14": null,
+      "attributes.io24": null,
+      "attributes.io31": null,
+      "attributes.io32": null,
+      "attributes.io35": null,
+      "attributes.io36": null,
+      "attributes.io37": null,
+      "attributes.io39": null,
+      "attributes.io68": null,
+      "attributes.io69": null,
+      "attributes.io80": null,
+      "attributes.pdop": null,
+      "attributes.rssi": null,
+      "attributes.axisX": null,
+      "attributes.axisY": null,
+      "attributes.axisZ": null,
+      "attributes.event": null,
+      "attributes.hours": null,
+      "attributes.io113": null,
+      "attributes.io200": null,
+      "attributes.io205": null,
+      "attributes.io206": null,
+      "attributes.io237": null,
+      "attributes.io238": null,
+      "attributes.io263": null,
+      "attributes.power": null,
+      "attributes.motion": null,
+      "attributes.battery": null,
+      "attributes.distance": null,
+      "attributes.ignition": null,
+      "attributes.odometer": null,
+      "attributes.operator": null,
+      "attributes.priority": null,
+      "attributes.tripOdometer": null,
+      "attributes.totalDistance": null
+    }
+  }
+},
+{
+  "model": "gpstracking.trackerdecoder",
+  "pk": 6,
+  "fields": {
+    "identifier_type": "TC2",
+    "msgtype": "devices",
+    "mapping": {
+      "id": null,
+      "name": "screenname",
+      "model": null,
+      "phone": null,
+      "speeds": null,
+      "status": null,
+      "contact": null,
+      "groupId": "tc_group",
+      "category": "icon",
+      "disabled": null,
+      "uniqueId": null,
+      "fixTimeMs": null,
+      "speeds.kt": null,
+      "calendarId": null,
+      "lastUpdate": null,
+      "positionId": null,
+      "speeds.bft": null,
+      "speeds.m/s": null,
+      "geofenceIds": null,
+      "speeds.km/h": null,
+      "deviceTimeMs": null,
+      "lastUpdateMs": "meta_timestamp",
+      "serverTimeMs": null,
+      "expirationTime": null,
+      "attributes.web.reportColor": null,
+      "attributes.report.ignoreOdometer": null
+    }
+  }
+},
+{
+  "model": "gpstracking.trackerdecoder",
+  "pk": 7,
+  "fields": {
+    "identifier_type": "TC2",
+    "msgtype": "positions_watch",
+    "mapping": {
+      "id": null,
+      "speed": null,
+      "valid": null,
+      "course": "course",
+      "address": null,
+      "fixTime": null,
+      "accuracy": null,
+      "altitude": "altitude",
+      "deviceId": null,
+      "latitude": null,
+      "outdated": null,
+      "protocol": null,
+      "fixTimeMs": "position_timestamp",
+      "longitude": null,
+      "speeds.kt": null,
+      "deviceTime": null,
+      "serverTime": null,
+      "speeds.bft": null,
+      "speeds.m/s": null,
+      "geofenceIds": null,
+      "speeds.km/h": "speed_kmh",
+      "deviceTimeMs": null,
+      "lastUpdateMs": null,
+      "serverTimeMs": null,
+      "attributes.sat": null,
+      "attributes.rssi": null,
+      "attributes.steps": null,
+      "attributes.motion": null,
+      "network.radioType": null,
+      "network.considerIp": null,
+      "attributes.distance": null,
+      "attributes.batteryLevel": null,
+      "attributes.totalDistance": null,
+      "network.cellTowers[0].cellId": null,
+      "network.cellTowers[1].cellId": null,
+      "network.cellTowers[2].cellId": null,
+      "network.cellTowers[0].signalStrength": null,
+      "network.cellTowers[1].signalStrength": null,
+      "network.cellTowers[2].signalStrength": null,
+      "network.cellTowers[0].locationAreaCode": null,
+      "network.cellTowers[1].locationAreaCode": null,
+      "network.cellTowers[2].locationAreaCode": null,
+      "network.cellTowers[0].mobileCountryCode": null,
+      "network.cellTowers[0].mobileNetworkCode": null,
+      "network.cellTowers[1].mobileCountryCode": null,
+      "network.cellTowers[1].mobileNetworkCode": null,
+      "network.cellTowers[2].mobileCountryCode": null,
+      "network.cellTowers[2].mobileNetworkCode": null
+    }
+  }
+},
+{
+  "model": "gpstracking.trackerdecoder",
+  "pk": 8,
+  "fields": {
+    "identifier_type": "TC2",
+    "msgtype": "positions_osmand",
+    "mapping": {
+      "id": null,
+      "speed": null,
+      "valid": null,
+      "course": "richting",
+      "speeds": null,
+      "address": null,
+      "fixTime": null,
+      "network": null,
+      "accuracy": null,
+      "altitude": "altitude",
+      "deviceId": null,
+      "latitude": "latitude",
+      "outdated": null,
+      "protocol": null,
+      "fixTimeMs": "positie_tijdstip",
+      "longitude": "longitude",
+      "speeds.kt": null,
+      "deviceTime": null,
+      "serverTime": null,
+      "speeds.bft": null,
+      "speeds.m/s": null,
+      "geofenceIds": null,
+      "speeds.km/h": "snelheid_kmh",
+      "deviceTimeMs": null,
+      "lastUpdateMs": null,
+      "serverTimeMs": null,
+      "attributes.sf": null,
+      "attributes.alt": null,
+      "attributes.err": null,
+      "attributes.snr": null,
+      "attributes.hdop": null,
+      "attributes.mmsi": null,
+      "attributes.rssi": null,
+      "attributes.alarm": null,
+      "attributes.hours": null,
+      "attributes.webid": null,
+      "attributes.charge": null,
+      "attributes.motion": null,
+      "attributes.server": null,
+      "attributes.source": null,
+      "attributes.aisepfd": null,
+      "attributes.counter": null,
+      "attributes.aiswidth": null,
+      "attributes.distance": null,
+      "attributes.receiver": null,
+      "attributes.shipname": null,
+      "attributes.aislength": null,
+      "attributes.aisaidtype": null,
+      "attributes.gateway-id": null,
+      "attributes.screenname": null,
+      "attributes.TTSdatatype": null,
+      "attributes.TTSreceiver": null,
+      "attributes.gateway-eui": null,
+      "attributes.recvstation": null,
+      "attributes.snr-ranking": null,
+      "attributes.batteryLevel": null,
+      "attributes.rssi-ranking": null,
+      "attributes.TTSidentifier": null,
+      "attributes.totalDistance": null,
+      "attributes.unixtimestamp": null,
+      "attributes.gateway-tenant": null,
+      "attributes.meta_unixtimestamp": null,
+      "attributes.position_unixtimestamp": null
+    }
+  }
+},
+{
+  "model": "gpstracking.trackerdecoder",
+  "pk": 9,
+  "fields": {
+    "identifier_type": "TC1",
+    "msgtype": "positions_watch",
+    "mapping": {
+      "id": null,
+      "speed": null,
+      "valid": null,
+      "course": "course",
+      "address": null,
+      "fixTime": null,
+      "accuracy": null,
+      "altitude": "altitude",
+      "deviceId": null,
+      "latitude": null,
+      "outdated": null,
+      "protocol": null,
+      "fixTimeMs": "position_timestamp",
+      "longitude": null,
+      "speeds.kt": null,
+      "deviceTime": null,
+      "serverTime": null,
+      "speeds.bft": null,
+      "speeds.m/s": null,
+      "geofenceIds": null,
+      "speeds.km/h": "speed_kmh",
+      "deviceTimeMs": null,
+      "lastUpdateMs": null,
+      "serverTimeMs": null,
+      "attributes.sat": null,
+      "attributes.rssi": null,
+      "attributes.steps": null,
+      "attributes.motion": null,
+      "network.radioType": null,
+      "network.considerIp": null,
+      "attributes.distance": null,
+      "attributes.batteryLevel": null,
+      "attributes.totalDistance": null,
+      "network.cellTowers[0].cellId": null,
+      "network.cellTowers[1].cellId": null,
+      "network.cellTowers[2].cellId": null,
+      "network.cellTowers[0].signalStrength": null,
+      "network.cellTowers[1].signalStrength": null,
+      "network.cellTowers[2].signalStrength": null,
+      "network.cellTowers[0].locationAreaCode": null,
+      "network.cellTowers[1].locationAreaCode": null,
+      "network.cellTowers[2].locationAreaCode": null,
+      "network.cellTowers[0].mobileCountryCode": null,
+      "network.cellTowers[0].mobileNetworkCode": null,
+      "network.cellTowers[1].mobileCountryCode": null,
+      "network.cellTowers[1].mobileNetworkCode": null,
+      "network.cellTowers[2].mobileCountryCode": null,
+      "network.cellTowers[2].mobileNetworkCode": null
+    }
+  }
+},
+{
+  "model": "gpstracking.trackerdecoder",
+  "pk": 10,
+  "fields": {
+    "identifier_type": "TC1",
+    "msgtype": "positions_osmand",
+    "mapping": {
+      "id": null,
+      "speed": null,
+      "valid": null,
+      "course": "course",
+      "address": null,
+      "fixTime": null,
+      "network": null,
+      "accuracy": null,
+      "altitude": "altitude",
+      "deviceId": null,
+      "latitude": "latitude",
+      "outdated": null,
+      "protocol": null,
+      "fixTimeMs": "position_timestamp",
+      "longitude": "longitude",
+      "speeds.kt": null,
+      "deviceTime": null,
+      "serverTime": null,
+      "speeds.bft": null,
+      "speeds.m/s": null,
+      "geofenceIds": null,
+      "speeds.km/h": "speed_kmh",
+      "deviceTimeMs": null,
+      "lastUpdateMs": null,
+      "serverTimeMs": null,
+      "attributes.sf": null,
+      "attributes.alt": null,
+      "attributes.err": null,
+      "attributes.snr": null,
+      "attributes.hdop": null,
+      "attributes.icao": null,
+      "attributes.mmsi": null,
+      "attributes.rssi": null,
+      "attributes.alarm": null,
+      "attributes.hours": null,
+      "attributes.webid": null,
+      "attributes.aisdsc": null,
+      "attributes.aisimo": null,
+      "attributes.charge": null,
+      "attributes.motion": null,
+      "attributes.server": null,
+      "attributes.source": null,
+      "attributes.squawk": null,
+      "attributes.tdelta": null,
+      "attributes.adsbreg": null,
+      "attributes.aisepfd": null,
+      "attributes.aisname": null,
+      "attributes.counter": null,
+      "attributes.TTSdelta": null,
+      "attributes.adsbtype": null,
+      "attributes.aiswidth": null,
+      "attributes.distance": null,
+      "attributes.receiver": null,
+      "attributes.shipname": null,
+      "attributes.aislength": null,
+      "attributes.aisstatus": null,
+      "attributes.TTSprocess": null,
+      "attributes.adsbopicao": null,
+      "attributes.adsbsquawk": null,
+      "attributes.aisaidtype": null,
+      "attributes.aisdraught": null,
+      "attributes.gateway-id": null,
+      "attributes.screenname": null,
+      "attributes.TTSdatatype": null,
+      "attributes.TTSreceiver": null,
+      "attributes.aiscallsign": null,
+      "attributes.gateway-eui": null,
+      "attributes.recvstation": null,
+      "attributes.snr-ranking": null,
+      "attributes.adsbcallsign": null,
+      "attributes.aistypesolas": null,
+      "attributes.batteryLevel": null,
+      "attributes.rssi-ranking": null,
+      "attributes.verticalrate": null,
+      "attributes.TTSidentifier": null,
+      "attributes.totalDistance": null,
+      "attributes.unixtimestamp": null,
+      "attributes.gateway-tenant": null,
+      "attributes.meta_unixtimestamp": null,
+      "attributes.position_unixtimestamp": null
+    }
+  }
+},
+{
+  "model": "gpstracking.trackerdecoderfield",
+  "pk": "adsb_callsign",
+  "fields": {
+    "dbfield": "adsb_callsign"
+  }
+},
+{
+  "model": "gpstracking.trackerdecoderfield",
+  "pk": "adsb_registration",
+  "fields": {
+    "dbfield": "adsb_registration"
+  }
+},
+{
+  "model": "gpstracking.trackerdecoderfield",
+  "pk": "adsb_type",
+  "fields": {
+    "dbfield": "adsb_type"
+  }
+},
+{
+  "model": "gpstracking.trackerdecoderfield",
+  "pk": "ais_callsign",
+  "fields": {
+    "dbfield": "ais_callsign"
+  }
+},
+{
+  "model": "gpstracking.trackerdecoderfield",
+  "pk": "ais_length",
+  "fields": {
+    "dbfield": "ais_length"
+  }
+},
+{
+  "model": "gpstracking.trackerdecoderfield",
+  "pk": "ais_name",
+  "fields": {
+    "dbfield": "ais_name"
+  }
+},
+{
+  "model": "gpstracking.trackerdecoderfield",
+  "pk": "ais_type",
+  "fields": {
+    "dbfield": "ais_type"
+  }
+},
+{
+  "model": "gpstracking.trackerdecoderfield",
+  "pk": "ais_width",
+  "fields": {
+    "dbfield": "ais_width"
+  }
+},
+{
+  "model": "gpstracking.trackerdecoderfield",
+  "pk": "altitude",
+  "fields": {
+    "dbfield": "altitude"
+  }
+},
+{
+  "model": "gpstracking.trackerdecoderfield",
+  "pk": "course",
+  "fields": {
+    "dbfield": "course"
+  }
+},
+{
+  "model": "gpstracking.trackerdecoderfield",
+  "pk": "icon",
+  "fields": {
+    "dbfield": "icon"
+  }
+},
+{
+  "model": "gpstracking.trackerdecoderfield",
+  "pk": "latitude",
+  "fields": {
+    "dbfield": ""
+  }
+},
+{
+  "model": "gpstracking.trackerdecoderfield",
+  "pk": "longitude",
+  "fields": {
+    "dbfield": ""
+  }
+},
+{
+  "model": "gpstracking.trackerdecoderfield",
+  "pk": "meta_timestamp",
+  "fields": {
+    "dbfield": "meta_timestamp"
+  }
+},
+{
+  "model": "gpstracking.trackerdecoderfield",
+  "pk": "position",
+  "fields": {
+    "dbfield": "position"
+  }
+},
+{
+  "model": "gpstracking.trackerdecoderfield",
+  "pk": "position_timestamp",
+  "fields": {
+    "dbfield": "position_timestamp"
+  }
+},
+{
+  "model": "gpstracking.trackerdecoderfield",
+  "pk": "screenname",
+  "fields": {
+    "dbfield": "screen_name"
+  }
+},
+{
+  "model": "gpstracking.trackerdecoderfield",
+  "pk": "speed_kmh",
+  "fields": {
+    "dbfield": "speed"
+  }
+},
+{
+  "model": "gpstracking.trackerdecoderfield",
+  "pk": "tc_group",
+  "fields": {
+    "dbfield": ""
+  }
+}
+]
