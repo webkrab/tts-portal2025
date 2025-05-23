@@ -60,42 +60,77 @@ class GpsTrackingUtilDB:
         GpsTrackingUtilDB.refresh_tracker_cache()
 
     @staticmethod
-    def get_or_create_tracker_identifier(identity) -> tuple[TrackerIdentifier | None, Tracker | None]:
+    def get_or_create_tracker_identifier(identity) -> TrackerIdentifier | None:
         identkey = identity.get("identkey")
+        tc_unique_id = identity.get("tcUniqueId")
         identtype = identity.get("identtype")
         identid = identity.get("identid")
-        tcUniqueId = identity.get("tcUniqueId")
 
-        if not (identkey and identtype and identid):
-            logger.warning(f"Onvoldoende data om identifier aan te maken of bij te werken: {identity}")
-            return None, None
+        if not identtype or not identid:
+            logger.warning(f"Onvoldoende data om identifier aan te maken: {identity}")
+            return None
 
         try:
-            tracker_identifier = TrackerIdentifier.objects.filter(identkey=identkey).first()
-            if tracker_identifier:
-                GpsTrackingUtilDB.tracker_cache[identkey] = tracker_identifier
-                return tracker_identifier, tracker_identifier.tracker
+            tc_unique_id_caps = f"{tc_unique_id.upper()}" if tc_unique_id else None
+            tcuid_identkey = f"TCUID_{tc_unique_id_caps}" if tc_unique_id else None
 
-            identifier_type = TrackerIdentifierType.objects.get(code=identtype)
-            tracker = Tracker.objects.create()
+            # Probeer uit cache
+            ti_identkey = GpsTrackingUtilDB.tracker_cache.get(identkey) if identkey else None
+            ti_tc_uid = GpsTrackingUtilDB.tracker_cache.get(tcuid_identkey) if tcuid_identkey else None
 
-            tracker_identifier = TrackerIdentifier.objects.create(
-                tracker=tracker,
-                identifier_type=identifier_type,
-                external_id=identid,
-                identkey=identkey,
-            )
+            # Fallback op DB als niet in cache
+            if not ti_identkey and identkey:
+                ti_identkey = TrackerIdentifier.objects.filter(identkey=identkey).first()
+            if not ti_tc_uid and tcuid_identkey:
+                ti_tc_uid = TrackerIdentifier.objects.filter(identkey=tcuid_identkey).first()
 
-            GpsTrackingUtilDB.tracker_cache[identkey] = tracker_identifier
-            logger.info(f"Aangemaakte nieuwe TrackerIdentifier: {identkey}")
-            return tracker_identifier, tracker
+            # CASE 1: identkey bestaat, tc_uid niet → voeg tc_uid toe
+            if ti_identkey and not ti_tc_uid and tcuid_identkey:
+                if not TrackerIdentifier.objects.filter(identkey=tcuid_identkey).exists():
+                    logger.debug(f"Koppel nieuwe identifier {tcuid_identkey} aan bestaande tracker {ti_identkey.tracker.id}")
+                    TrackerIdentifier.objects.create(
+                            tracker=ti_identkey.tracker,
+                            identifier_type=TrackerIdentifierType.objects.get(code="TCUID"),
+                            external_id=tc_unique_id_caps,
+                    )
+
+            # CASE 2: tc_uid bestaat, identkey niet → voeg identkey toe
+            if ti_tc_uid and not ti_identkey and identkey:
+                if not TrackerIdentifier.objects.filter(identkey=identkey).exists():
+                    logger.debug(f"Koppel nieuwe identifier {identkey} aan bestaande tracker {ti_tc_uid.tracker.id}")
+                    ti_identkey = TrackerIdentifier.objects.create(
+                            tracker=ti_tc_uid.tracker,
+                            identifier_type=TrackerIdentifierType.objects.get(code=identtype),
+                            external_id=identid,
+                    )
+                else:
+                    ti_identkey = TrackerIdentifier.objects.get(identkey=identkey)
+
+            # CASE 3: Geen van beide bestaat → maak nieuwe tracker + identifiers
+            if not ti_identkey and not ti_tc_uid and (identkey or tcuid_identkey):
+                tracker = Tracker.objects.create()
+                logger.debug(f"Aangemaakt nieuwe tracker {tracker.id} met identifiers: identkey={identkey}, tc_unique_id={tc_unique_id_caps}")
+                if identkey:
+                    ti_identkey = TrackerIdentifier.objects.create(
+                            tracker=tracker,
+                            identifier_type=TrackerIdentifierType.objects.get(code=identtype),
+                            external_id=identid,
+                    )
+                if tcuid_identkey:
+                    TrackerIdentifier.objects.create(
+                            tracker=tracker,
+                            identifier_type=TrackerIdentifierType.objects.get(code="TCUID"),
+                            external_id=tc_unique_id_caps,
+                    )
+
+            return ti_identkey
 
         except TrackerIdentifierType.DoesNotExist:
-            logger.warning(f"Onbekend identifier_type '{identtype}' voor {identkey}")
+            logger.warning(f"Onbekend identifier_type '{identtype}'")
         except Exception as e:
-            logger.exception(f"Fout bij aanmaken/bijwerken van TrackerIdentifier {identkey}: {e}")
+            logger.exception(f"Fout bij aanmaken of ophalen van TrackerIdentifier: {e}")
 
-        return None, None
+        return None
 
     @staticmethod
     def process_mqtt_message(message_str: str):
@@ -118,7 +153,7 @@ class GpsTrackingUtilDB:
                 logger.warning("identity ontbreekt, bericht genegeerd.")
                 return
 
-            tracker_identifier, tracker = GpsTrackingUtilDB.get_or_create_tracker_identifier(identity)
+            tracker_identifier = GpsTrackingUtilDB.get_or_create_tracker_identifier(identity)
             if not tracker_identifier:
                 return
 
@@ -145,7 +180,10 @@ class GpsTrackingUtilDB:
 
             if formated:
                 tracker_entry = formated.copy()  # ensure we work with a copy
-                tracker_entry["position"] = position
+
+                if position:
+                    tracker_entry["position"] = position
+
                 tid = tracker_identifier.tracker.id
                 position_ts = tracker_entry.get("position_timestamp") or received
                 meta_ts = tracker_entry.get("meta_timestamp") or received
@@ -164,15 +202,16 @@ class GpsTrackingUtilDB:
                             elif k in location_fields:
                                 if existing.get("position_timestamp") is None or existing["position_timestamp"] <= position_ts:
                                     existing[k] = v
-                                    existing["position_timestamp"] = position_ts
+
                             else:
                                 if existing.get("meta_timestamp") is None or existing["meta_timestamp"] <= meta_ts:
                                     existing[k] = v
-                                    existing["meta_timestamp"] = meta_ts
+
 
         except Exception as e:
             logger.exception(f"Fout bij verwerken van MQTT bericht: {e}")
 
+    @staticmethod
     @staticmethod
     def save_buffer_to_db():
         start = time.time()
@@ -198,10 +237,13 @@ class GpsTrackingUtilDB:
 
         if trackers_items:
             ids = [item['id'] for item in trackers_items if 'id' in item]
-            existing_trackers = {tracker.id: tracker for tracker in Tracker.objects.filter(id__in=ids)}
+            existing_trackers = {
+                    tracker.id: tracker for tracker in Tracker.objects.filter(id__in=ids)
+            }
 
             updated_trackers = []
-            update_fields = set()
+            fields_per_tracker = {}
+            valid_fields = {f.name for f in Tracker._meta.get_fields()}
 
             for item in trackers_items:
                 tracker_id = item.get('id')
@@ -211,35 +253,55 @@ class GpsTrackingUtilDB:
                     logger.warning(f"Tracker met id {tracker_id} niet gevonden voor update.")
                     continue
 
-                # Velden bijwerken op basis van de input
+                fields_changed = set()
+
                 for key, value in item.items():
-                    if key != 'id':
+                    if key == 'id':
+                        continue
+                    if key not in valid_fields:
+                        logger.warning(f"Ongeldig veld '{key}' genegeerd voor tracker {tracker_id}.")
+                        continue
+
+                    if key == 'screen_name':
+                        print("key", value)
+                        if not tracker.screen_name or tracker.screen_name.strip() == '':
+                            print("db", tracker.screen_name)
+                            tracker.screen_name = value
+                            fields_changed.add('screen_name')
+                    elif key == 'icon':
+                        if not tracker.icon or tracker.icon.strip() == '':
+                            tracker.icon = value
+                            fields_changed.add('icon')
+                    else:
+                        print("overig", key)
                         setattr(tracker, key, value)
-                        update_fields.add(key)
+                        fields_changed.add(key)
 
-                # Speciale logica: screenname vullen vanuit screenlink als die leeg is
-                if (not tracker.screen_name or tracker.screen_name.strip() == '') and item.get('screen_name'):
-                    tracker.screen_name = item['screen_name']
-                    update_fields.add('screen_name')
+                if fields_changed:
+                    updated_trackers.append(tracker)
+                    fields_per_tracker[tracker.pk] = fields_changed
 
-                # Speciale logica: icon vullen vanuit icon als die leeg is
-                if (not tracker.icon or tracker.icon.strip() == '') and item.get('icon'):
-                    tracker.icon = item['icon']
-                    update_fields.add('icon')
+            # Groepeer per unieke veldenset
+            from collections import defaultdict
 
-                updated_trackers.append(tracker)
+            grouped = defaultdict(list)
+            for tracker in updated_trackers:
+                fieldset = frozenset(fields_per_tracker[tracker.pk])
+                grouped[fieldset].append(tracker)
 
-            if updated_trackers and update_fields:
+            # Bulk update per veldenset
+            for fieldset, group in grouped.items():
                 try:
-                    Tracker.objects.bulk_update(updated_trackers, fields=list(update_fields))
-                    logger.info(f"{len(updated_trackers)} tracker.trackers geüpdatet in de database. {round(time.time() - start, 3)}s")
+                    Tracker.objects.bulk_update(group, fields=list(fieldset))
+                    logger.info(f"{len(group)} tracker.trackers bulk-geüpdatet met velden: {fieldset}.")
                 except Exception as e:
-                    logger.exception(f"Fout bij bulk_update van trackers, fallback naar individuele updates: {e}")
-                    for t in updated_trackers:
+                    logger.exception(f"Fout bij bulk_update van trackers voor veldenset {fieldset}: {e}")
+                    for t in group:
                         try:
-                            t.save()
+                            t.save(update_fields=list(fieldset))
                         except Exception as ex:
-                            logger.exception(f"Fout bij opslaan van individuele tracker {t.id}: {ex}")
+                            logger.exception(f"Fout bij individuele save van tracker {t.id}: {ex}")
+            logger.warning(f"Multiple tracker.trackers opgeslagen in de database. {round(time.time() - start, 3)}s")
         else:
             logger.warning(f"0 tracker.trackers opgeslagen in de database. {round(time.time() - start, 3)}s")
 

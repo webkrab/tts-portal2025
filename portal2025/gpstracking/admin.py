@@ -224,22 +224,42 @@ class TrackerInline(admin.TabularInline):
     extra = 1
     fields = ('tracker', 'link_origin')
     readonly_fields = ('link_origin',)
+    verbose_name = "Tracker"
+    verbose_name_plural = "Tracker-TrackerGroup Relationships"
+
+    def get_formset(self, request, obj=None, **kwargs):
+        formset = super().get_formset(request, obj, **kwargs)
+        formset.group_instance = obj  # 👈 geef de parent group door
+        return formset
 
     def link_origin(self, obj):
         try:
-            tracker = obj.tracker
-            group = obj.group
-            type_ids = group.identifier_types.values_list('id', flat=True)
+            if not obj.tracker_id:
+                return "Nog niet opgeslagen"
+            tracker = Tracker.objects.get(pk=obj.tracker_id)
+
+            # Gebruik group via formset, als obj.group_id niet bestaat
+            group = getattr(obj, 'group', None)
+            if group is None and hasattr(obj, '_tracker_group_admin_group'):
+                group = obj._tracker_group_admin_group
+            elif hasattr(self, 'formset') and hasattr(self.formset, 'group_instance'):
+                group = self.formset.group_instance
+
+            if group is None:
+                return "(groep ontbreekt)"
+
+            type_codes = group.identifier_types.values_list('code', flat=True)
             matching_types = tracker.identifiers.filter(
-                identifier_type_id__in=type_ids
+                identifier_type__code__in=type_codes
             ).values_list('identifier_type__code', flat=True).distinct()
 
             codes = list(matching_types)
             return f"Via Identifier(s): {', '.join(codes)}" if codes else "Direct"
-        except Exception:
-            return "Direct"
+        except Exception as e:
+            return f"(fout: {e})"
 
     link_origin.short_description = "Link Origin"
+
 
 
 
@@ -284,7 +304,7 @@ class TrackerAdmin(LeafletGeoAdmin):
 
     def get_list_display(self, request):
         columns = ['id', 'screen_name', 'icon', 'meta_timestamp', 'meta_age_display_column', 'position_timestamp', 'position_age_display_column']
-        types = TrackerIdentifierType.objects.all()
+        types = TrackerIdentifierType.objects.all().order_by("code")
         for itype in types:
             safe_slug = slugify(itype.code).replace("-", "_")
             column_name = f'identifier_{safe_slug}'
@@ -304,8 +324,8 @@ class TrackerAdmin(LeafletGeoAdmin):
 @admin.register(TrackerIdentifier)
 class TrackerIdentifierAdmin(admin.ModelAdmin):
     form = TrackerIdentifierAdminForm
-    list_display = ('tracker', 'identifier_type', 'external_id',)
-    search_fields = ('identifier_type__code', 'external_id', 'identkey')
+    list_display = ('identkey', 'tracker', 'identifier_type', 'external_id')
+    search_fields = ('identifier_type__code', 'external_id', 'identkey', 'tracker__screen_name')
     list_filter = ('identifier_type__code',)
     readonly_fields = ('identkey',)
 
@@ -317,6 +337,18 @@ class TrackerGroupAdmin(LeafletGeoAdmin):
     search_fields = ('name', 'smartcode')
     inlines = [TrackerInline]
 
+    def get_formsets_with_inlines(self, request, obj=None):
+        for inline in self.get_inline_instances(request, obj):
+            if isinstance(inline, TrackerInline):
+                formset = inline.get_formset(request, obj)
+                # 👇 sla de groep op in elke form-instance (voor link_origin)
+                for form in formset.form.base_fields.values():
+                    form._tracker_group_admin_group = obj
+                inline.formset = formset
+                yield formset, inline
+            else:
+                yield inline.get_formset(request, obj), inline
+
 
 @admin.register(TrackerIdentifierType)
 class TrackerIdentifierTypeAdmin(admin.ModelAdmin):
@@ -327,7 +359,7 @@ class TrackerIdentifierTypeAdmin(admin.ModelAdmin):
 
 @admin.register(TrackerMessage)
 class TrackerMessageAdmin(LeafletGeoAdmin):
-    list_display = ('tracker_identifier', 'created_at_display', 'msgtype', 'sha256_key', 'content')
+    list_display = ('sha256_key', 'tracker_identifier', 'created_at_display', 'msgtype', 'content')
     search_fields = (
         'tracker_identifier__external_id',
         'tracker_identifier__tracker__screen_name',
@@ -345,7 +377,7 @@ class TrackerMessageAdmin(LeafletGeoAdmin):
 @admin.register(TrackerDecoder)
 class TrackerDecoderAdmin(admin.ModelAdmin):
     form = TrackerDecoderAdminForm
-    list_display = ('identifier_type', 'msgtype')
+    list_display = ('msgtype', 'identifier_type')
     search_fields = ('identifier_type__code', 'msgtype')
     list_filter = ('identifier_type__code', 'msgtype')
 

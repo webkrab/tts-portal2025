@@ -17,7 +17,7 @@ logger = get_logger(__name__)
 # ======================
 # 🔧 Configuratie
 # ======================
-TRACCAR_URL = "1.lifeguardtracking.nl:8082"
+TRACCAR_URL = "2.lifeguardtracking.nl:8082"
 EMAIL = "django-Cellular"
 PASSWORD = "django-Cellular"
 
@@ -30,7 +30,7 @@ class Traccar:
 
 
     def start(self):
-        logger.warning("🚀 Traccar1 client starting...")
+        logger.warning("🚀 Traccar2 client starting...")
         session_key = get_session_key(EMAIL, PASSWORD, TRACCAR_URL)
         if not session_key:
             logger.error("❌ Kan geen sessie opzetten, afsluiten.")
@@ -102,8 +102,8 @@ class Traccar:
                             "msgtype": msgtype,
                             "msghash": genereer_hash(json.dumps(item)),
                             "received": int(time.time() * 1000),
-                            "gateway": "lt1",
-                            "identtype": "TC1"
+                            "gateway": "lt2",
+                            "identtype": "TC2"
                         }
                         self.decoder(input_message)
 

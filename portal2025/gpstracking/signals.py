@@ -137,7 +137,7 @@ def sync_trackers_on_identifiertype_change(sender, instance, action, pk_set, **k
 
         for tracker in trackers:
             tracker_type_ids = set(tracker.identifiers.values_list('identifier_type_id', flat=True))
-            still_valid_type_ids = set(instance.identifier_types.values_list('id', flat=True))
+            still_valid_type_ids = set(instance.identifier_types.values_list('code', flat=True))
 
             if not tracker_type_ids.intersection(still_valid_type_ids):
                 had_removed_type = tracker.identifiers.filter(identifier_type_id__in=removed_type_ids).exists()

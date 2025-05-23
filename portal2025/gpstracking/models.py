@@ -83,6 +83,9 @@ class TrackerIdentifierType(models.Model):
     )
     description = models.CharField(max_length=255, blank=True, null=True)
 
+    class Meta:
+        ordering = ['code']
+
     def __str__(self):
         return f"{self.code} | {self.description}"
 
@@ -163,6 +166,9 @@ class Tracker(models.Model):
     position_timestamp = models.BigIntegerField(blank=True, null=True, help_text="UNIX tijd in ms")
 
     groups = models.ManyToManyField(TrackerGroup, related_name='trackers', blank=True)
+
+    class Meta:
+        ordering = ['screen_name', 'id']
 
     @property
     def position_timestamp_display(self):
@@ -253,6 +259,9 @@ class TrackerIdentifier(models.Model):
                 UniqueConstraint(fields=['tracker', 'identifier_type'], name='unique_tracker_per_type'),
         ]
 
+        ordering = ['identkey']
+
+
     def save(self, *args, **kwargs):
         """
         Zet de external_id om naar hoofdletters, stelt de identkey in,
@@ -284,6 +293,8 @@ class TrackerMessage(models.Model):
     position = gis_models.PointField(geography=True, blank=True, null=True, srid=4326)
     sha256_key = models.CharField(max_length=64, blank=True, null=True, unique=True)
 
+    class Meta:
+        ordering = ['-message_timestamp']
     @property
     def message_timestamp_display(self):
         """
