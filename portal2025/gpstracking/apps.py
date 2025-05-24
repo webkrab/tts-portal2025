@@ -7,8 +7,10 @@ class GpstrackingConfig(AppConfig):
     name = 'gpstracking'
 
     def ready(self):
-        if os.environ.get('RUN_MAIN') != 'true' or 1==1:  # only run in main process
+        if os.environ.get('RUN_MAIN') != 'true':  # only run in main process
             return
+        from utils.logger import get_logger
+        logger = get_logger(__name__)
 
         import gpstracking.signals
         from gpstracking.util_db import GpsTrackingUtilDB

@@ -96,14 +96,15 @@ class Traccar:
             for msgtype, items in data.items():
                 if isinstance(items, list):
                     for item in items:
-                        logger.info(msgtype, item.get("deviceId", item.get("id", None)))
+                        device_id = item.get('deviceId', item.get('id', None))
+                        #logger.info(f"[device_id={device_id}] Bericht ontvangen van type '{msgtype}'")
                         input_message = {
                             "raw": item,
                             "msgtype": msgtype,
                             "msghash": genereer_hash(json.dumps(item)),
                             "received": int(time.time() * 1000),
-                            "gateway": "lt1",
-                            "identtype": "TC1"
+                            "gateway": "lt2",
+                            "identtype": "TC2"
                         }
                         self.decoder(input_message)
 

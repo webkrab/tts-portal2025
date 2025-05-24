@@ -134,6 +134,8 @@ class GpsTrackingUtilDB:
             ti_identkey = GpsTrackingUtilDB.find_tracker_identifier_by_identkey(identkey)
             ti_tc_uid = GpsTrackingUtilDB.find_tracker_identifier_by_identkey(tcuid_identkey)
 
+            tracker = None
+
             # CASE 1
             if ti_identkey and not ti_tc_uid and tcuid_identkey:
                 tracker = ti_identkey.tracker
@@ -312,7 +314,7 @@ class GpsTrackingUtilDB:
             for fieldset, group in grouped.items():
                 try:
                     Tracker.objects.bulk_update(group, list(fieldset))
-                    logger.info(f"{len(group)} tracker.trackers bulk-geüpdatet met velden: {list(fieldset)}.")
+                    logger.debug(f"{len(group)} tracker.trackers bulk-geüpdatet met velden: {list(fieldset)}.")
                 except Exception as e:
                     logger.exception(f"Fout bij bulk_update van trackers voor veldenset {fieldset}: {e}")
                     for t in group:
@@ -320,6 +322,7 @@ class GpsTrackingUtilDB:
                             t.save(update_fields=list(fieldset))
                         except Exception as ex:
                             logger.exception(f"Fout bij individuele save van tracker {t.id}: {ex}")
+            logger.info(f"{len(updated_trackers)} tracker.tracker opgeslagen ({round(time.time() - start, 3)}s)")
         else:
             logger.info("0 tracker.trackers opgeslagen")
 

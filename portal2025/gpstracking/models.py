@@ -359,6 +359,7 @@ class TrackerDecoder(models.Model):
     identifier_type = models.ForeignKey(TrackerIdentifierType, on_delete=models.PROTECT, related_name='decoder_identifiertypes')
     msgtype = models.CharField(max_length=30, default=None)
     mapping = models.JSONField(default=dict, blank=True)
+    ttl = models.IntegerField(default=90, help_text="Leeftijd in dagen van bericht met dit decodertype, voordat deze wordt verwijderd")
 
     class Meta:
         ordering = ['identifier_type__code', 'msgtype']

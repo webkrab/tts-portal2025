@@ -15,7 +15,7 @@ services:
     command: >
       bash -c "wait-for-it ${DJANGO_DB_HOST}:${DJANGO_DB_PORT} --timeout=30 -- bash -c 'wait-for-it emqx:18083 --timeout=30 -- python manage.py makemigrations --noinput &&
                    python manage.py migrate --noinput &&
-                   python manage.py loaddata initial_load.json &&
+                   if [ -f initial_load.json ]; then python manage.py loaddata initial_load.json; else echo \"[INFO] initial_load.json niet gevonden, overslaan\"; fi &&
                    python manage.py runserver 0.0.0.0:8000'"
     volumes:
       - .:/app

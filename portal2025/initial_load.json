@@ -269,7 +269,7 @@
   "pk": 9,
   "fields": {
     "smartcode": "knrm_teh",
-    "name": KNRM Ter Heijden",
+    "name": "KNRM Ter Heijden",
     "area": null,
     "visible_fields": [
       "id",
@@ -585,7 +585,7 @@
       "phone": null,
       "status": null,
       "contact": null,
-      "groupId": "tc_group",
+      "groupId":  null,
       "category": "icon",
       "disabled": null,
       "uniqueId": null,
@@ -863,7 +863,7 @@
       "speeds": null,
       "status": null,
       "contact": null,
-      "groupId": "tc_group",
+      "groupId":  null,
       "category": "icon",
       "disabled": null,
       "uniqueId": null,
@@ -1288,13 +1288,6 @@
   "pk": "speed_kmh",
   "fields": {
     "dbfield": "speed"
-  }
-},
-{
-  "model": "gpstracking.trackerdecoderfield",
-  "pk": "tc_group",
-  "fields": {
-    "dbfield": ""
   }
 }
 ]
