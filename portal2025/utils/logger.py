@@ -5,7 +5,7 @@ from datetime import datetime, timezone, timedelta
 
 
 class SQLiteHandler(logging.Handler):
-    def __init__(self, db_path="logs/app_logs.db", retention_days=7):
+    def __init__(self, db_path="logs/logs.sqlite", retention_days=7):
         super().__init__()
         self.db_path = db_path
         self.retention_days = retention_days
@@ -73,7 +73,7 @@ class SQLiteHandler(logging.Handler):
             conn.close()
 
 
-def get_logger(name, log_file="logs/app.log", db_path="logs/app_logs.db"):
+def get_logger(name, log_file="logs/app.log", db_path="logs/logs.sqlite"):
     """Configureert een logger die logt naar console (DEBUG), bestand en SQLite (vanaf WARNING)."""
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)  # Laat alle niveaus door, handlers bepalen wat ze verwerken
