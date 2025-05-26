@@ -13,6 +13,49 @@ from django.utils.functional import lazy
 from django.utils.translation import gettext_lazy as _
 
 
+def get_alarm_choises():
+    ALARM_CHOICES = [
+            ('general', 'Alarm'),
+            ('sos', 'SOS'),
+            ('vibration', 'Trilling'),
+            ('movement', 'Beweging'),
+            ('lowspeed', 'Lage snelheid'),
+            ('overspeed', 'Snelheidsoverschreiding'),
+            ('fallDown', 'Gevallen'),
+            ('lowPower', 'Lage stroom'),
+            ('lowBattery', 'Laag accuniveau'),
+            ('fault', 'Fout'),
+            ('powerOff', 'Uitgeschakeld'),
+            ('powerOn', 'Ingeschakeld'),
+            ('door', 'Deur'),
+            ('lock', 'Afgesloten'),
+            ('unlock', 'Geopend'),
+            ('geofence', 'Geofence'),
+            ('geofenceEnter', 'Geofence binnengegaan'),
+            ('geofenceExit', 'Geofence verlaten'),
+            ('gpsAntennaCut', 'GPS antenne verbroken'),
+            ('accident', 'Ongeluk'),
+            ('tow', 'Gesleept'),
+            ('idle', 'Rust'),
+            ('highRpm', 'Hoge RPM'),
+            ('hardAcceleration', 'Harde versnelling'),
+            ('hardBraking', 'Harde remming'),
+            ('hardCornering', 'Scherpe bocht'),
+            ('laneChange', 'Rijbaanwisseling'),
+            ('fatigueDriving', 'Vermoeid rijden'),
+            ('powerCut', 'Stroomonderbreking'),
+            ('powerRestored', 'Stroom hersteld'),
+            ('jamming', 'Signaal verstoring'),
+            ('temperature', 'Temperatuur'),
+            ('parking', 'Parkeren'),
+            ('bonnet', 'Motorkap'),
+            ('footBrake', 'Voetrem'),
+            ('fuelLeak', 'Brandstoflek'),
+            ('tampering', 'Knoeien'),
+            ('removing', 'Verwijderd'),
+    ]
+
+
 def default_tracker_area():
     """
     Geeft een standaardgebied (grofweg Nederland) terug als MultiPolygon.
@@ -147,6 +190,7 @@ class Tracker(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     custom_name = models.CharField(max_length=255, blank=True, null=True, db_index=True, )
     icon = models.CharField(max_length=255, blank=True, null=True)
+    alarm_type = models.CharField(max_length=32,choices=get_alarm_choises(), verbose_name='Alarmtype')
 
     ais_type = models.CharField(max_length=255, blank=True, null=True)
     ais_name = models.CharField(max_length=255, blank=True, null=True)

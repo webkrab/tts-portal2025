@@ -99,6 +99,7 @@ def create_or_update_sql_view(sender, instance: TrackerGroup, **kwargs):
     INNER JOIN {Tracker.groups.through._meta.db_table} AS tg
         ON tracker.id = tg.tracker_id
     WHERE {where_clause};
+    GRANT SELECT ON {view_name} TO django_ro;
     """
 
     logger.debug(sql_create)
