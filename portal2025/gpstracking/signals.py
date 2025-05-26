@@ -56,6 +56,21 @@ def create_or_update_sql_view(sender, instance: TrackerGroup, **kwargs):
                 ) AS age_human
             """)
             view_columns.append('age_display')
+
+        elif field == 'display_name':
+            select_parts.append("""
+                    COALESCE(
+                        tracker.custom_name,
+                        (
+                            SELECT STRING_AGG(ti.identkey, ' | ')
+                            FROM gpstracking_trackeridentifier ti
+                            WHERE ti.tracker_id = tracker.id
+                        ),
+                        tracker.id::text
+                    ) AS display_name
+                """)
+            view_columns.append('display_name')
+
         elif field in valid_fields:
             select_parts.append(f"tracker.{field}")
             view_columns.append(field)

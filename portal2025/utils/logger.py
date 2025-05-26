@@ -5,7 +5,7 @@ from datetime import datetime, timezone, timedelta
 
 
 class SQLiteHandler(logging.Handler):
-    def __init__(self, db_path="logs/logs.sqlite", retention_days=7):
+    def __init__(self, db_path="logs/logs.db", retention_days=7):
         super().__init__()
         self.db_path = db_path
         self.retention_days = retention_days
@@ -73,7 +73,7 @@ class SQLiteHandler(logging.Handler):
             conn.close()
 
 
-def get_logger(name, log_file="logs/app.log", db_path="logs/logs.sqlite"):
+def get_logger(name, log_file="logs/app.log", db_path="logs/logs.db"):
     """Configureert een logger die logt naar console (DEBUG), bestand en SQLite (vanaf WARNING)."""
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)  # Laat alle niveaus door, handlers bepalen wat ze verwerken
@@ -92,7 +92,7 @@ def get_logger(name, log_file="logs/app.log", db_path="logs/logs.sqlite"):
     sh = SQLiteHandler(db_path=db_path)
     sh.setLevel(logging.WARNING)
 
-    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - [%(filename)s:%(lineno)d] - %(funcName)s - %(message)s')
+    formatter = logging.Formatter('%(asctime)s | %(levelname)s | %(name)s | %(funcName)s | %(filename)s:%(lineno)d | %(message)s')
 
     ch.setFormatter(formatter)
     fh.setFormatter(formatter)

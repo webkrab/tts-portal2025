@@ -28,9 +28,8 @@ class Traccar:
         self.MAPPING_STN = {}
         self.IDENTTYPE = TrackerIdentifierType.objects.all()
 
-
     def start(self):
-        logger.info("🚀 Traccar1 client starting...")
+        logger.info("Traccar1 client starting...")
         session_key = get_session_key(EMAIL, PASSWORD, TRACCAR_URL)
         if not session_key:
             logger.error("Kan geen sessie opzetten, afsluiten.")
@@ -44,12 +43,12 @@ class Traccar:
 
         # 🌐 Start WebSocket
         self.ws = websocket.WebSocketApp(
-            ws_url,
-            header=headers,
-            on_open=self.on_open,
-            on_message=self.on_message,
-            on_error=self.on_error,
-            on_close=self.on_close
+                ws_url,
+                header=headers,
+                on_open=self.on_open,
+                on_message=self.on_message,
+                on_error=self.on_error,
+                on_close=self.on_close
         )
 
         logger.info("Verbinden met WebSocket...")
@@ -82,7 +81,6 @@ class Traccar:
         except Exception as e:
             logger.error(f"Exception bij ophalen devices: {e}")
 
-
     def process(self, message):
         try:
             if isinstance(message, str):
@@ -94,75 +92,90 @@ class Traccar:
                 return
 
             for msgtype, items in data.items():
+                msgtype = f'TC_{msgtype}'
                 if isinstance(items, list):
                     for item in items:
                         device_id = item.get('deviceId', item.get('id', None))
-                        #logger.info(f"[device_id={device_id}] Bericht ontvangen van type '{msgtype}'")
-                        input_message = {
-                            "raw": item,
-                            "msgtype": msgtype,
-                            "msghash": genereer_hash(json.dumps(item)),
-                            "received": int(time.time() * 1000),
-                            "gateway": "lt2",
-                            "identtype": "TC2"
-                        }
-                        self.decoder(input_message)
+                        logger.debug(f"[device_id={device_id}] Bericht ontvangen van type '{msgtype}'")
+                        try:
+                            input_message = {
+                                    "raw"      : item,
+                                    "msgtype"  : msgtype,
+                                    "msghash"  : genereer_hash(json.dumps(item)),
+                                    "received" : int(time.time() * 1000),
+                                    "gateway"  : "lt2",
+                                    "identtype": "TC2"
+                            }
+                            self.decoder(input_message)
+                        except Exception as e:
+                            print("error:", e, item)
 
         except Exception as e:
             logger.error(f"JSON Fout: {e} - Inhoud: {message}")
 
     def decoder(self, mqttdata):
-        """Decodeert en verwerkt één MQTT bericht"""
-        rawdata = mqttdata.get("raw", {})
-        msgtype = mqttdata.get("msgtype")
-        identtype = mqttdata.get("identtype", None)
+        try:
+            """Decodeert en verwerkt één MQTT bericht"""
+            rawdata = mqttdata.get("raw", {})
+            msgtype = mqttdata.get("msgtype")
+            identtype = mqttdata.get("identtype", None)
 
-        if not all([rawdata, msgtype, identtype]):
-            logger.warning("Ontbrekende velden in MQTT bericht")
-            return
+            if not all([rawdata, msgtype, identtype]):
+                logger.warning("Ontbrekende velden in MQTT bericht")
+                return
 
-        if msgtype == "positions":
-            identid = f'{rawdata.get("deviceId")}'
-        elif msgtype == "devices":
-            identid = f'{rawdata.get("id")}'
-        else:
-            logger.warning(f"{msgtype} kent geen decoder")
-            return
+            if msgtype == "TC_positions":
+                identid = f'{rawdata.get("deviceId")}'
+            elif msgtype == "TC_devices":
+                identid = f'{rawdata.get("id")}'
+            elif msgtype == "TC_events":
+                identid = f'{rawdata.get("deviceId")}'
+            else:
+                logger.warning(f"{msgtype} kent geen identid logica")
+                identid = None
 
-        identity = {"identkey": f"{identtype}_{identid}",
-                    "identtype": identtype,
-                    "identid": identid
-                    }
+            identity = {"identkey" : f"{identtype}_{identid}",
+                        "identtype": identtype,
+                        "identid"  : identid
+                        }
 
-        if "protocol" in rawdata:
-            msgtype = f'{msgtype}_{rawdata["protocol"]}'
+            if "protocol" in rawdata:
+                msgtype = f'{msgtype}_{rawdata["protocol"]}'
 
-        flat_data = flatten_multilevel(rawdata, prefix='')
-        flat_data["lastUpdateMs"] = convert_to_unixtimestamp(flat_data.get("lastUpdate", None))
-        flat_data["serverTimeMs"] = convert_to_unixtimestamp(flat_data.get("serverTime", None))
-        flat_data["deviceTimeMs"] = convert_to_unixtimestamp(flat_data.get("deviceTime", None))
-        flat_data["fixTimeMs"] = convert_to_unixtimestamp(flat_data.get("fixTime", None))
-        flat_data["speeds"] = convert_speed(flat_data.get("speed", 0.0), "kt")
+            flat_data = flatten_multilevel(rawdata, prefix='')
 
-        identity["tcUniqueId"] = flat_data.get("uniqueId")
+            identity["tcUniqueId"] = flat_data.get("uniqueId")
 
-        mapping = get_decoder_mapping(self, identtype, msgtype)
-        stdata, missing = remap_keys(flat_data, mapping)
-        if missing:
-            logger.info("missing", {missing})
-            update_mapping_if_missing(self, identtype, msgtype, missing)
+            flat_data["lastUpdateMs"] = convert_to_unixtimestamp(flat_data.get("lastUpdate", None))
+            flat_data["serverTimeMs"] = convert_to_unixtimestamp(flat_data.get("serverTime", None))
+            flat_data["deviceTimeMs"] = convert_to_unixtimestamp(flat_data.get("deviceTime", None))
+            flat_data["fixTimeMs"] = convert_to_unixtimestamp(flat_data.get("fixTime", None))
 
-        if not stdata:
-            logger.error(f"Geen st_data mapping voor type: {msgtype} | {flat_data}")
-            return
+            if "speed" in flat_data:
+                flat_data["speeds"] = convert_speed(flat_data.get("speed"), "kt")
 
-        msghash = genereer_hash(json.dumps(stdata))
-        mqttdata["identity"] = identity
-        mqttdata["msgtype"] = msgtype
-        mqttdata["data"] = stdata
-        mqttdata["msghash"] = msghash
+            mapping = get_decoder_mapping(self, identtype, msgtype)
+            stdata, missing = remap_keys(flat_data, mapping)
+            stdata = {k: v for k, v in stdata.items() if v}
 
-        self.sender(mqttdata)
+            if missing:
+                logger.info(f"Ontbrekende velden: {missing} in type: {msgtype}")
+                update_mapping_if_missing(self, identtype, msgtype, missing)
+
+            if not stdata:
+                logger.error(f"Geen st_data mapping voor type: {msgtype} | {flat_data}")
+                return
+
+            msghash = genereer_hash(json.dumps(stdata))
+            mqttdata["identity"] = identity
+            mqttdata["msgtype"] = msgtype
+            mqttdata["data"] = stdata
+            mqttdata["msghash"] = msghash
+
+            if identid:
+                self.sender(mqttdata)
+        except Exception as e:
+            logger.error(f"Fout bij decoderen: {e} {mqttdata}")
 
     def sender(self, mqttdata):
         # Implement actual sending logic here

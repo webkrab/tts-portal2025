@@ -29,4 +29,4 @@ class GpstrackingConfig(AppConfig):
 
         threading.Thread(target=start_traccar2, daemon=True).start()
 
-        logger.info("✅ Traccar background service gestart")
+        logger.info("Traccar background service gestart")

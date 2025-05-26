@@ -37,8 +37,8 @@ def remap_keys(data, mapping):
             unmapped_keys.append(key)
 
     if not result:
-        logger.error(f"Geen overeenkomende keys gevonden in bericht: {data}")
-        return None, unmapped_keys
+        logger.debug(f"Geen overeenkomende keys gevonden in bericht: {data}")
+        return {}, unmapped_keys
 
     return result, unmapped_keys
 

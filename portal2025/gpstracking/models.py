@@ -44,7 +44,7 @@ def get_tracker_field_choices():
     Returns:
         Tuple[List[Tuple[str, str]], List[Tuple[str, str]]]
     """
-    extra_fields = ["age_in_sec", "age_human", "ais_dimensions"]
+    extra_fields = ["age_in_sec", "age_human", "ais_dimensions", "display_name"]
     model_fields = [
             (field.name, field.name)
             for field in Tracker._meta.get_fields()
@@ -62,7 +62,7 @@ def default_tracker_visible_fields():
         List[str]: Lijst met veldnamen.
     """
     return [
-            "id", "screen_name", "icon",
+            "id", "custom_name", "icon",
             "altitude", "speed", "heading",
             "position_timestamp", "position",
             "age_in_sec", "age_human"
@@ -98,7 +98,9 @@ class TrackerGroup(models.Model):
     """
     smartcode = models.CharField(
             max_length=25,
+            db_index=True,
             unique=True,
+            help_text="Suffix voor DB-view, na opslaan is deze code niet wijzigbaar. Viewnaam:  v_tracker_group_[smartcode]",
             validators=[
                     RegexValidator(
                             r'^[a-z0-9_]+$',
@@ -143,7 +145,7 @@ class Tracker(models.Model):
     Een volgobject (tracker) met optionele AIS/ADSB eigenschappen en geografische positie.
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    screen_name = models.CharField(max_length=255, blank=True, null=True)
+    custom_name = models.CharField(max_length=255, blank=True, null=True, db_index=True, )
     icon = models.CharField(max_length=255, blank=True, null=True)
 
     ais_type = models.CharField(max_length=255, blank=True, null=True)
@@ -163,18 +165,18 @@ class Tracker(models.Model):
     adsb_type = models.CharField(max_length=255, blank=True, null=True)
     adsb_registration = models.CharField(max_length=255, blank=True, null=True)
     adsb_callsign = models.CharField(max_length=255, blank=True, null=True)
-    meta_timestamp = models.BigIntegerField(blank=True, null=True, help_text="UNIX tijd in ms")
+    meta_timestamp = models.BigIntegerField(blank=True, null=True,db_index=True,  help_text="UNIX tijd in ms")
 
     altitude = models.FloatField(blank=True, null=True)
     speed = models.FloatField(blank=True, null=True)
     course = models.FloatField(blank=True, null=True)
     position = gis_models.PointField(geography=True, blank=True, null=True, srid=4326)
-    position_timestamp = models.BigIntegerField(blank=True, null=True, help_text="UNIX tijd in ms")
+    position_timestamp = models.BigIntegerField(blank=True, null=True, db_index=True, help_text="UNIX tijd in ms")
 
     groups = models.ManyToManyField(TrackerGroup, related_name='trackers', blank=True)
 
     class Meta:
-        ordering = ['screen_name', 'id']
+        ordering = ['custom_name', 'id']
 
     @property
     def position_timestamp_display(self):
@@ -246,18 +248,33 @@ class Tracker(models.Model):
         if seconds or not parts: parts.append(f"{seconds}s")
         return ' '.join(parts)
 
+    def display_name(self):
+        """
+        Geeft een leesbare naam voor deze tracker:
+        - custom_name indien beschikbaar
+        - anders: gekoppelde identifiers
+        - anders: UUID
+        """
+        if self.custom_name:
+            return self.custom_name
+
+        identifiers = self.identifiers.all()
+        if identifiers.exists():
+            return ' | '.join(f"{ident.identkey}" for ident in identifiers)
+        return str(self.id)
+
     def __str__(self):
-        return self.screen_name or str(self.id)
+        return self.display_name()
 
 
 class TrackerIdentifier(models.Model):
     """
     Identificatie die een externe ID koppelt aan een specifieke tracker.
     """
-    external_id = models.CharField(max_length=255)
+    external_id = models.CharField(max_length=255,db_index=True)
     identifier_type = models.ForeignKey(TrackerIdentifierType, on_delete=models.PROTECT, related_name='tracker_identifiers')
     tracker = models.ForeignKey(Tracker, on_delete=models.CASCADE, related_name='identifiers')
-    identkey = models.CharField(max_length=255, unique=True, editable=False)
+    identkey = models.CharField(max_length=255, unique=True, editable=False, db_index=True)
 
     class Meta:
         constraints = [
@@ -282,7 +299,7 @@ class TrackerIdentifier(models.Model):
         self.tracker.groups.add(*groups_to_add)
 
     def __str__(self):
-        return f"{self.identifier_type.code}: {self.external_id} | {self.tracker.screen_name}"
+        return f"{self.identifier_type.code}: {self.external_id} | {self.tracker.custom_name}"
 
 
 class TrackerMessage(models.Model):
@@ -291,13 +308,13 @@ class TrackerMessage(models.Model):
     """
     tracker_identifier = models.ForeignKey(TrackerIdentifier, on_delete=models.CASCADE, related_name='messages')
     msgtype = models.CharField(max_length=30, default=None)
-    sha256_key = models.CharField(max_length=64, blank=True, null=True, unique=True)
+    sha256_key = models.CharField(max_length=64, primary_key=True)
     content = models.JSONField()
     dbcall = models.JSONField(blank=True, null=True)
     raw = models.JSONField(blank=True, null=True)
-    message_timestamp = models.BigIntegerField(help_text="UNIX tijd in milliseconden (UTC)")
+    message_timestamp = models.BigIntegerField(db_index=True, help_text="UNIX tijd in milliseconden (UTC)")
     position = gis_models.PointField(geography=True, blank=True, null=True, srid=4326)
-    position_timestamp = models.BigIntegerField(blank=True, null=True, help_text="UNIX tijd in ms")
+    position_timestamp = models.BigIntegerField(db_index=True, blank=True, null=True, help_text="UNIX tijd in ms")
 
     class Meta:
         ordering = ['-message_timestamp']

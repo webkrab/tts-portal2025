@@ -23,6 +23,7 @@ from .models import (
 admin.site.site_header = "TTS Beheer"
 admin.site.site_title = "TTS Beheerportal"
 
+
 # --------- CUSTOM WIDGET --------- #
 
 class MappingDropdownWidget(forms.Widget):
@@ -42,8 +43,8 @@ class MappingDropdownWidget(forms.Widget):
 
         choices = list(TrackerDecoderField.objects.values_list('name', flat=True))
         choices_html = lambda selected: ''.join(
-            [f'<option value="" {"selected" if selected in ("", None) else ""}>---</option>'] +
-            [f'<option value="{c}" {"selected" if c == selected else ""}>{c}</option>' for c in choices]
+                [f'<option value="" {"selected" if selected in ("", None) else ""}>---</option>'] +
+                [f'<option value="{c}" {"selected" if c == selected else ""}>{c}</option>' for c in choices]
         )
 
         html = '<table><tr><th>Sleutel</th><th>Waarde</th></tr>'
@@ -74,28 +75,48 @@ class MappingDropdownWidget(forms.Widget):
         return result or {}
 
 
-
 # --------- FORMULIEREN --------- #
 
+from django.contrib.gis.geos import GEOSGeometry
+
+
 class TrackerGroupAdminForm(forms.ModelForm):
+    geojson_upload = forms.FileField(
+            label="GeoJSON upload (optioneel)",
+            required=False,
+            help_text="Upload een GeoJSON-bestand om het gebied automatisch in te stellen."
+    )
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         _, all_fields = get_tracker_field_choices()
         self.fields['visible_fields'] = forms.MultipleChoiceField(
-            choices=all_fields,
-            required=False,
-            widget=forms.CheckboxSelectMultiple,
-            initial=default_tracker_visible_fields()
+                choices=all_fields,
+                required=False,
+                widget=forms.CheckboxSelectMultiple,
+                initial=default_tracker_visible_fields()
         )
         self.fields['identifier_types'] = forms.ModelMultipleChoiceField(
-            queryset=TrackerIdentifierType.objects.all(),
-            required=False,
-            widget=forms.CheckboxSelectMultiple
+                queryset=TrackerIdentifierType.objects.all(),
+                required=False,
+                widget=forms.CheckboxSelectMultiple
         )
 
     class Meta:
         model = TrackerGroup
         fields = '__all__'
+
+    def clean(self):
+        cleaned_data = super().clean()
+        geojson_file = cleaned_data.get("geojson_upload")
+        if geojson_file:
+            try:
+                geojson_str = geojson_file.read().decode("utf-8")
+                geom = GEOSGeometry(geojson_str, srid=4326)
+                cleaned_data["area"] = geom
+            except Exception as e:
+                raise ValidationError({"geojson_upload": f"Kon GeoJSON niet verwerken: {e}"})
+        return cleaned_data
 
 
 class TrackerIdentifierTypeAdminForm(forms.ModelForm):
@@ -107,9 +128,9 @@ class TrackerIdentifierTypeAdminForm(forms.ModelForm):
         kwargs['initial'] = initial
         super().__init__(*args, **kwargs)
         self.fields['groups'] = forms.ModelMultipleChoiceField(
-            queryset=TrackerGroup.objects.all(),
-            required=False,
-            widget=forms.CheckboxSelectMultiple
+                queryset=TrackerGroup.objects.all(),
+                required=False,
+                widget=forms.CheckboxSelectMultiple
         )
 
     class Meta:
@@ -150,7 +171,7 @@ class TrackerIdentifierInlineForm(forms.ModelForm):
                 qs = qs.exclude(pk=self.instance.pk)
             if qs.exists():
                 raise ValidationError({
-                    "external_id": f"De combinatie van type '{identifier_type.code}' en ID '{external_id}' bestaat al."
+                        "external_id": f"De combinatie van type '{identifier_type.code}' en ID '{external_id}' bestaat al."
                 })
 
         return cleaned_data
@@ -173,7 +194,7 @@ class TrackerIdentifierAdminForm(forms.ModelForm):
                 qs = qs.exclude(pk=self.instance.pk)
             if qs.exists():
                 raise ValidationError({
-                    "external_id": f"De combinatie van type '{identifier_type.code}' en ID '{external_id}' bestaat al."
+                        "external_id": f"De combinatie van type '{identifier_type.code}' en ID '{external_id}' bestaat al."
                 })
 
         return cleaned_data
@@ -196,10 +217,10 @@ class TrackerDecoderFieldAdminForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         model_fields, _ = get_tracker_field_choices()
         self.fields['dbfield'] = forms.ChoiceField(
-            choices=[('', '---')] + model_fields,
-            required=False,
-            label=self.fields['dbfield'].label,
-            help_text=self.fields['dbfield'].help_text
+                choices=[('', '---')] + model_fields,
+                required=False,
+                label=self.fields['dbfield'].label,
+                help_text=self.fields['dbfield'].help_text
         )
 
 
@@ -216,11 +237,13 @@ class TrackerIdentifierInline(admin.TabularInline):
         if not obj.pk:
             return "-"
         return ", ".join(g.name for g in obj.identifier_type.groups.all())
+
     linked_groups.short_description = "Automatisch gekoppelde groepen"
 
     def latest_message_timestamp(self, obj):
         message = obj.messages.order_by('-message_timestamp').first()
         return message.message_timestamp_display if message else "-"
+
     latest_message_timestamp.short_description = "Laatst seen"
 
     def latest_message_age_in_sec(self, obj):
@@ -240,6 +263,7 @@ class TrackerIdentifierInline(admin.TabularInline):
         return ' '.join(parts)
 
     latest_message_age_in_sec.short_description = "Last seen age"
+
 
 class TrackerInline(admin.TabularInline):
     model = Tracker.groups.through
@@ -272,7 +296,7 @@ class TrackerInline(admin.TabularInline):
 
             type_codes = group.identifier_types.values_list('code', flat=True)
             matching_types = tracker.identifiers.filter(
-                identifier_type__code__in=type_codes
+                    identifier_type__code__in=type_codes
             ).values_list('identifier_type__code', flat=True).distinct()
 
             codes = list(matching_types)
@@ -283,14 +307,12 @@ class TrackerInline(admin.TabularInline):
     link_origin.short_description = "Link Origin"
 
 
-
-
 # --------- ADMIN CONFIG --------- #
 
 @admin.register(Tracker)
 class TrackerAdmin(LeafletGeoAdmin):
     search_fields = (
-            'screen_name',
+            'display_name',
             'ais_name',
             'adsb_registration',
             'identifiers__identkey',
@@ -302,7 +324,7 @@ class TrackerAdmin(LeafletGeoAdmin):
 
     def inferred_group_list(self, obj):
         groups = TrackerGroup.objects.filter(
-            identifier_types__in=obj.identifiers.values_list('identifier_type', flat=True)
+                identifier_types__in=obj.identifiers.values_list('identifier_type', flat=True)
         ).distinct()
         return ", ".join(g.name for g in groups)
 
@@ -319,7 +341,6 @@ class TrackerAdmin(LeafletGeoAdmin):
 
     position_age_display_column.short_description = "Position_age"
 
-
     def meta_timestamp_display(self, obj):
         return obj.meta_timestamp_display
 
@@ -332,7 +353,7 @@ class TrackerAdmin(LeafletGeoAdmin):
     meta_age_display_column.short_description = "Meta_age"
 
     def get_list_display(self, request):
-        columns = ['id', 'screen_name', 'icon', 'meta_timestamp_display', 'meta_age_display_column', 'position_timestamp_display', 'position_age_display_column']
+        columns = ['id', 'display_name', 'icon', 'meta_timestamp_display', 'meta_age_display_column', 'position_timestamp_display', 'position_age_display_column']
         types = TrackerIdentifierType.objects.all().order_by("code")
         for itype in types:
             safe_slug = slugify(itype.code).replace("-", "_")
@@ -342,9 +363,11 @@ class TrackerAdmin(LeafletGeoAdmin):
                     def col(admin_self, obj):
                         identifiers = obj.identifiers.filter(identifier_type=itype)
                         return ", ".join(i.external_id for i in identifiers)
+
                     col.short_description = itype.code
                     col.admin_order_field = None
                     return col
+
                 setattr(self.__class__, column_name, make_func(itype))
             columns.append(column_name)
         return columns
@@ -354,18 +377,18 @@ class TrackerAdmin(LeafletGeoAdmin):
 class TrackerIdentifierAdmin(admin.ModelAdmin):
     form = TrackerIdentifierAdminForm
     list_display = (
-        'identkey',
-        'tracker',
-        'identifier_type',
-        'external_id',
-        'latest_message_timestamp',
-        'latest_message_age_in_sec',
+            'identkey',
+            'tracker',
+            'identifier_type',
+            'external_id',
+            'latest_message_timestamp',
+            'latest_message_age_in_sec',
     )
     search_fields = (
-        'identifier_type__code',
-        'external_id',
-        'identkey',
-        'tracker__screen_name',
+            'identifier_type__code',
+            'external_id',
+            'identkey',
+            'tracker__display_name',
     )
     list_filter = ('identifier_type__code',)
     readonly_fields = ('identkey',)
@@ -376,6 +399,7 @@ class TrackerIdentifierAdmin(admin.ModelAdmin):
         """
         message = obj.messages.order_by('-message_timestamp').first()
         return message.message_timestamp_display if message else "-"
+
     latest_message_timestamp.short_description = "Last seen"
 
     def latest_message_age_in_sec(self, obj):
@@ -397,18 +421,43 @@ class TrackerIdentifierAdmin(admin.ModelAdmin):
         if seconds or not parts: parts.append(f"{seconds}s")
         return ' '.join(parts)
 
-
-
     latest_message_age_in_sec.short_description = "Last seen age"
-
 
 
 @admin.register(TrackerGroup)
 class TrackerGroupAdmin(LeafletGeoAdmin):
-    list_display = ('smartcode', 'name')
+    list_display = ('smartcode', 'name', 'tracker_count')
     form = TrackerGroupAdminForm
     search_fields = ('name', 'smartcode')
     inlines = [TrackerInline]
+
+    fieldsets = (
+            (None, {
+                    'fields': ('smartcode', 'name')
+            }),
+            ('GEOGRAPHIC AREA', {
+                    'fields'     : ('geojson_upload', 'area'),
+                    'description': (
+                            "Trackers in deze groep worden alleen weergegeven wanneer ze zich binnen het geselecteerde gebied bevinden.<br>"
+                            "Laat dit veld leeg om geen weergavebeperking toe te passen.<br>"
+                            "Je kunt een GeoJSON-bestand, geometry-type (multi-)polygoon, uploaden of het gebied handmatig op de kaart intekenen."
+                    )
+            }),
+
+            ('FIELDS IN DB-VIEW', {
+                    'fields': ('visible_fields',),
+                    'description': 'Alleen de geselecteerde velden worden meegegeven in de view'
+            }),
+            ('TRACKER GROUPS', {
+                    'fields'     : ('identifier_types',),
+                    'description': 'Een tracker met het geselecteerde type wordt automatisch toegevoegd aan deze groep.'
+            })
+    )
+
+    def tracker_count(self, obj):
+        return obj.trackers.count()
+
+    tracker_count.short_description = "Trackers in group"
 
     def get_formsets_with_inlines(self, request, obj=None):
         for inline in self.get_inline_instances(request, obj):
@@ -434,8 +483,8 @@ class TrackerIdentifierTypeAdmin(admin.ModelAdmin):
 class TrackerMessageAdmin(LeafletGeoAdmin):
     list_display = ('sha256_key', 'tracker_identifier', 'created_at_display', 'msgtype', 'content')
     search_fields = (
-        'tracker_identifier__external_id',
-        'tracker_identifier__tracker__screen_name',
+            'tracker_identifier__external_id',
+            'tracker_identifier__tracker__display_name',
     )
     list_filter = ('msgtype', 'tracker_identifier__identifier_type__code')
     readonly_fields = ('sha256_key', 'message_timestamp_display')

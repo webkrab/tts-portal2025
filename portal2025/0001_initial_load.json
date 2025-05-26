@@ -63,9 +63,9 @@
 },
 {
   "model": "gpstracking.trackeridentifiertype",
-  "pk": "DMR",
+  "pk": "DMR_RN",
   "fields": {
-    "description": "DMR"
+    "description": "DMR | Reddingsbrigade Nederland"
   }
 },
 {
@@ -119,7 +119,7 @@
     "area": null,
     "visible_fields": [
       "id",
-      "screen_name",
+      "display_name",
       "icon",
       "altitude",
       "speed",
@@ -141,7 +141,7 @@
     "area": null,
     "visible_fields": [
       "id",
-      "screen_name",
+      "display_name",
       "icon",
       "altitude",
       "speed",
@@ -163,7 +163,7 @@
     "area": null,
     "visible_fields": [
       "id",
-      "screen_name",
+      "display_name",
       "icon",
       "altitude",
       "speed",
@@ -185,7 +185,7 @@
     "area": null,
     "visible_fields": [
       "id",
-      "screen_name",
+      "display_name",
       "icon",
       "altitude",
       "speed",
@@ -207,7 +207,7 @@
     "area": null,
     "visible_fields": [
       "id",
-      "screen_name",
+      "display_name",
       "icon",
       "altitude",
       "speed",
@@ -229,7 +229,7 @@
     "area": null,
     "visible_fields": [
       "id",
-      "screen_name",
+      "display_name",
       "icon",
       "altitude",
       "speed",
@@ -251,7 +251,7 @@
     "area": null,
     "visible_fields": [
       "id",
-      "screen_name",
+      "display_name",
       "icon",
       "altitude",
       "speed",
@@ -273,7 +273,7 @@
     "area": null,
     "visible_fields": [
       "id",
-      "screen_name",
+      "display_name",
       "icon",
       "altitude",
       "speed",
@@ -295,7 +295,7 @@
     "area": null,
     "visible_fields": [
       "id",
-      "screen_name",
+      "display_name",
       "icon",
       "altitude",
       "speed",
@@ -317,7 +317,7 @@
     "area": null,
     "visible_fields": [
       "id",
-      "screen_name",
+      "display_name",
       "icon",
       "altitude",
       "speed",
@@ -339,7 +339,7 @@
     "area": null,
     "visible_fields": [
       "id",
-      "screen_name",
+      "display_name",
       "icon",
       "altitude",
       "speed",
@@ -361,7 +361,7 @@
     "area": null,
     "visible_fields": [
       "id",
-      "screen_name",
+      "display_name",
       "icon",
       "altitude",
       "speed",
@@ -383,7 +383,7 @@
     "area": null,
     "visible_fields": [
       "id",
-      "screen_name",
+      "display_name",
       "icon",
       "altitude",
       "speed",
@@ -405,7 +405,7 @@
     "area": null,
     "visible_fields": [
       "id",
-      "screen_name",
+      "display_name",
       "icon",
       "altitude",
       "speed",
@@ -427,7 +427,7 @@
     "area": null,
     "visible_fields": [
       "id",
-      "screen_name",
+      "custom_name",
       "icon",
       "altitude",
       "speed",
@@ -449,7 +449,7 @@
     "area": null,
     "visible_fields": [
       "id",
-      "screen_name",
+      "custom_name",
       "icon",
       "altitude",
       "speed",
@@ -471,7 +471,7 @@
     "area": null,
     "visible_fields": [
       "id",
-      "screen_name",
+      "custom_name",
       "icon",
       "altitude",
       "speed",
@@ -493,7 +493,7 @@
     "area": null,
     "visible_fields": [
       "id",
-      "screen_name",
+      "custom_name",
       "icon",
       "altitude",
       "speed",
@@ -515,7 +515,7 @@
     "area": null,
     "visible_fields": [
       "id",
-      "screen_name",
+      "custom_name",
       "icon",
       "altitude",
       "speed",
@@ -537,7 +537,7 @@
     "area": null,
     "visible_fields": [
       "id",
-      "screen_name",
+      "custom_name",
       "icon",
       "altitude",
       "speed",
@@ -559,7 +559,7 @@
     "area": null,
     "visible_fields": [
       "id",
-      "screen_name",
+      "custom_name",
       "icon",
       "altitude",
       "speed",
@@ -577,7 +577,7 @@
   "pk": 1,
   "fields": {
     "identifier_type": "TC1",
-    "msgtype": "devices",
+    "msgtype": "TC_devices",
     "mapping": {
       "id": null,
       "name": "screenname",
@@ -612,7 +612,7 @@
   "pk": 2,
   "fields": {
     "identifier_type": "TC1",
-    "msgtype": "positions_h02",
+    "msgtype": "TC_positions_h02",
     "mapping": {
       "id": null,
       "speed": null,
@@ -659,7 +659,7 @@
   "pk": 3,
   "fields": {
     "identifier_type": "TC2",
-    "msgtype": "positions_h02",
+    "msgtype": "TC_positions_h02",
     "mapping": {
       "id": null,
       "speed": null,
@@ -707,7 +707,7 @@
   "pk": 4,
   "fields": {
     "identifier_type": "TC2",
-    "msgtype": "positions_teltonika",
+    "msgtype": "TC_positions_teltonika",
     "mapping": {
       "id": null,
       "speed": null,
@@ -781,7 +781,7 @@
   "pk": 5,
   "fields": {
     "identifier_type": "TC1",
-    "msgtype": "positions_teltonika",
+    "msgtype": "TC_positions_teltonika",
     "mapping": {
       "id": null,
       "speed": null,
@@ -854,7 +854,7 @@
   "pk": 6,
   "fields": {
     "identifier_type": "TC2",
-    "msgtype": "devices",
+    "msgtype": "TC_devices",
     "mapping": {
       "id": null,
       "name": "screenname",
@@ -890,7 +890,7 @@
   "pk": 7,
   "fields": {
     "identifier_type": "TC2",
-    "msgtype": "positions_watch",
+    "msgtype": "TC_positions_watch",
     "mapping": {
       "id": null,
       "speed": null,
@@ -948,7 +948,7 @@
   "pk": 8,
   "fields": {
     "identifier_type": "TC2",
-    "msgtype": "positions_osmand",
+    "msgtype": "TC_positions_osmand",
     "mapping": {
       "id": null,
       "speed": null,
@@ -1021,7 +1021,7 @@
   "pk": 9,
   "fields": {
     "identifier_type": "TC1",
-    "msgtype": "positions_watch",
+    "msgtype": "TC_positions_watch",
     "mapping": {
       "id": null,
       "speed": null,
@@ -1079,7 +1079,7 @@
   "pk": 10,
   "fields": {
     "identifier_type": "TC1",
-    "msgtype": "positions_osmand",
+    "msgtype": "TC_positions_osmand",
     "mapping": {
       "id": null,
       "speed": null,
@@ -1280,7 +1280,7 @@
   "model": "gpstracking.trackerdecoderfield",
   "pk": "screenname",
   "fields": {
-    "dbfield": "screen_name"
+    "dbfield": "custom_name"
   }
 },
 {
