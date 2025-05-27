@@ -279,6 +279,7 @@ class TrackerInline(admin.TabularInline):
         return formset
 
     def link_origin(self, obj):
+        return "dummy"
         try:
             if not obj.tracker_id:
                 return "Nog niet opgeslagen"
@@ -312,7 +313,7 @@ class TrackerInline(admin.TabularInline):
 @admin.register(Tracker)
 class TrackerAdmin(LeafletGeoAdmin):
     search_fields = (
-            'display_name',
+            'custom_name',
             'ais_name',
             'adsb_registration',
             'identifiers__identkey',
@@ -388,7 +389,7 @@ class TrackerIdentifierAdmin(admin.ModelAdmin):
             'identifier_type__code',
             'external_id',
             'identkey',
-            'tracker__display_name',
+            'tracker__custom_name',
     )
     list_filter = ('identifier_type__code',)
     readonly_fields = ('identkey',)
@@ -484,7 +485,7 @@ class TrackerMessageAdmin(LeafletGeoAdmin):
     list_display = ('sha256_key', 'tracker_identifier', 'created_at_display', 'msgtype', 'content')
     search_fields = (
             'tracker_identifier__external_id',
-            'tracker_identifier__tracker__display_name',
+            'tracker_identifier__tracker__custom_name',
     )
     list_filter = ('msgtype', 'tracker_identifier__identifier_type__code')
     readonly_fields = ('sha256_key', 'message_timestamp_display')

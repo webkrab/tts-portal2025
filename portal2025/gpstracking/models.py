@@ -54,6 +54,7 @@ def get_alarm_choises():
             ('tampering', 'Knoeien'),
             ('removing', 'Verwijderd'),
     ]
+    return ALARM_CHOICES
 
 
 def default_tracker_area():
@@ -95,6 +96,56 @@ def get_tracker_field_choices():
     ]
     all_fields = model_fields + [(field, field) for field in extra_fields]
     return model_fields, all_fields
+
+def get_icon_choises():
+    icons = {
+            "Arrow"           : "Pijl",
+            "Default"         : "Standaard",
+            "Animal"          : "Dier",
+            "Bicycle"         : "Fiets",
+            "Boat"            : "Boot",
+            "Bus"             : "Bus",
+            "Car"             : "Auto",
+            "Crane"           : "Kraan",
+            "Helicopter"      : "Helicopter",
+            "Motorcycle"      : "Motor",
+            "Offroad"         : "Offroad",
+            "Person"          : "Persoon",
+            "Pickup"          : "Pickup",
+            "Plane"           : "Vliegtuig",
+            "Ship"            : "Schip",
+            "Tractor"         : "Tractor",
+            "Train"           : "Trein",
+            "Tram"            : "Tram",
+            "Trolleybus"      : "Trolleybus",
+            "Truck"           : "Vrachtwagen",
+            "Van"             : "Busje",
+            "Scooter"         : "Scooter",
+            "Rwc"             : "RB Waterscooter",
+            "Strandjeep"      : "RB Strandjeep",
+            "Vlet"            : "RB vlet",
+            "Quad"            : "Quad",
+            "Rib"             : "RB Rib",
+            "Valentijn"       : "KNRM Valentijn",
+            "Arievisser"      : "KNRM Arie Visser",
+            "Johannesfrederik": "KNRM Johannes Frederik",
+            "Nh1816"          : "KNRM NH 1816",
+            "Nicolaas"        : "KNRM Nicolaas",
+            "Float"           : "KNRM Float",
+            "Atlantic"        : "KNRM Atlantic",
+            "Medic"           : "Ambulance",
+            "Police"          : "Politie",
+            "Fire"            : "Brandweer",
+            "Lifeguard"       : "RB Person",
+            "Tinn"            : "RB Tinn-Silver",
+            "Mob"             : "MOB Transponder",
+            "Ribrb"           : "RB RIB",
+            "Rws"             : "Rijkswaterstaat",
+            "Atvrb"           : "RB ATV",
+            "Bicyclerb"       : "RB Fiets",
+            "Khv"             : "KNRM Kusthulpverleningvoertuig"
+    }
+    return dict(sorted(icons.items(), key=lambda item: item[1]))
 
 
 def default_tracker_visible_fields():
@@ -166,7 +217,6 @@ class TrackerGroup(models.Model):
             blank=True,
             related_name='groups'
     )
-
     class Meta:
         ordering = ['smartcode']
 
@@ -189,8 +239,8 @@ class Tracker(models.Model):
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     custom_name = models.CharField(max_length=255, blank=True, null=True, db_index=True, )
-    icon = models.CharField(max_length=255, blank=True, null=True)
-    alarm_type = models.CharField(max_length=32,choices=get_alarm_choises(), verbose_name='Alarmtype')
+    icon = models.CharField(        max_length=32, choices=get_icon_choises(), default='default', blank=True, null=True)
+    alarm_type = models.CharField(  max_length=32, choices=get_alarm_choises(), verbose_name='Alarmtype', blank=True, null=True)
 
     ais_type = models.CharField(max_length=255, blank=True, null=True)
     ais_name = models.CharField(max_length=255, blank=True, null=True)

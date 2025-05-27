@@ -25,7 +25,7 @@ class GpstrackingConfig(AppConfig):
 
         def start_traccar2():
             from gpstracking.Api_traccar2 import Traccar as tc2
-            tc2().start()
+            #tc2().start()
 
         threading.Thread(target=start_traccar2, daemon=True).start()
 

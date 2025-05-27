@@ -311,19 +311,21 @@ class GpsTrackingUtilDB:
             valid_fields = {f.name for f in Tracker._meta.get_fields()}
 
             for tid, item in tracker_updates.items():
+                print(tid, item)
                 tracker = existing_trackers.get(tid)
                 if not tracker:
                     continue
-
                 changed = set()
                 for key, val in item.items():
                     if not val or key == 'id' or key not in valid_fields:
                         continue
 
                     if key in ['custom_name', 'icon']:
+                        print("get", getattr(tracker, key))
                         current_value = getattr(tracker, key)
                         if current_value is None or str(current_value).strip() == "":
                             setattr(tracker, key, val)
+                            print("set",key, val )
                             changed.add(key)
                     else:
                         setattr(tracker, key, val)

@@ -18,8 +18,8 @@ logger = get_logger(__name__)
 # 🔧 Configuratie
 # ======================
 TRACCAR_URL = "1.lifeguardtracking.nl:8082"
-EMAIL = "django-Cellular"
-PASSWORD = "django-Cellular"
+EMAIL = "django-new"
+PASSWORD = "django-new"
 
 
 class Traccar:
@@ -41,6 +41,7 @@ class Traccar:
         # 🔄 Devices ophalen via REST API en verwerken
         self.fetch_devices_via_api(session_key)
 
+        time.sleep(20)
         # 🌐 Start WebSocket
         self.ws = websocket.WebSocketApp(
                 ws_url,
