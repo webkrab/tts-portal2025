@@ -21,12 +21,12 @@ services:
     container_name: TTS_DJANGO_WEB
     command: >
       bash -c "
-        wait-for-it ${DJANGO_DB_HOST}:${DJANGO_DB_PORT} --timeout=30 -- \
-        bash -c 'wait-for-it 127.0.0.1:18083 --timeout=30 -- \
+        wait-for-it 127.0.0.1:5432 --timeout=60 -- \
+        wait-for-it 127.0.0.1:18083 --timeout=60 -- \
         python manage.py makemigrations --noinput &&
         python manage.py migrate --noinput &&
         if [ -f initial_load.json ]; then python manage.py loaddata initial_load.json; else echo \"[INFO] initial_load.json niet gevonden, overslaan\"; fi &&
-        python manage.py runserver 0.0.0.0:8000'"
+        python manage.py runserver 0.0.0.0:8000"
     volumes:
       - .:/app
     depends_on:

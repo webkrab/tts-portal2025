@@ -124,7 +124,7 @@ class GpsTrackingUtilDB:
             "ZZ_TEMP_TC1_58": "rb_rkj_mob",
             "ZZ_TEMP_TC1_60": "rb_gve",
             "ZZ_TEMP_TC1_69": "rb_waz",
-            "ZZ_TEMP_TC1_67": "vr_22_zld",
+            "ZZ_TEMP_TC1_67": "vr_19_zld",
 
             "ZZ_TEMP_TC2_6" : "camende",
             "ZZ_TEMP_TC2_7" : "fwater",
@@ -369,7 +369,7 @@ class GpsTrackingUtilDB:
                     current_value = getattr(tracker, key)
 
                     if key in ['custom_name', 'icon']:
-                        if current_value is None or str(current_value).strip() == "":
+                        if current_value is None or str(current_value).strip() == "" or str(current_value).lower() == 'default':
                             setattr(tracker, key, val)
                             changed.add(key)
                     else:
