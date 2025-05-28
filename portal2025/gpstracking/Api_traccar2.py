@@ -2,6 +2,7 @@ import json
 import time
 import urllib.parse
 import requests
+import threading
 import websocket
 
 from utils.gen_conv import convert_speed, flatten_multilevel, remap_keys, genereer_hash, convert_to_unixtimestamp
@@ -9,7 +10,6 @@ from gpstracking.models import TrackerDecoder, TrackerIdentifierType
 from utils.logger import get_logger
 from gpstracking.utils_geotracker import get_decoder_mapping, update_mapping_if_missing
 from django.contrib.gis.geos import MultiPolygon, Polygon, Point
-
 from gpstracking.util_db import GpsTrackingUtilDB
 
 logger = get_logger(__name__)
@@ -18,41 +18,65 @@ logger = get_logger(__name__)
 # 🔧 Configuratie
 # ======================
 TRACCAR_URL = "2.lifeguardtracking.nl:8082"
-EMAIL = "django-Cellular"
-PASSWORD = "django-Cellular"
+EMAIL = "django-new"
+PASSWORD = "django-new"
 
 
 class Traccar:
     def __init__(self):
         self.ws = None
+        self.ws_thread = None
+        self.session_key = None
         self.MAPPING_STN = {}
         self.IDENTTYPE = TrackerIdentifierType.objects.all()
 
     def start(self):
         logger.info("Traccar1 client starting...")
-        session_key = get_session_key(EMAIL, PASSWORD, TRACCAR_URL)
-        if not session_key:
+        self.session_key = get_session_key(EMAIL, PASSWORD, TRACCAR_URL)
+        if not self.session_key:
             logger.error("Kan geen sessie opzetten, afsluiten.")
             return
 
+        self.connect_websocket()
+
+        # Start de herstart-timer in een aparte thread
+        threading.Thread(target=self.restart_loop, daemon=True).start()
+
+    def connect_websocket(self):
         ws_url = f"ws://{TRACCAR_URL}/api/socket"
-        headers = {'Cookie': f'JSESSIONID={session_key}'}
+        headers = {'Cookie': f'JSESSIONID={self.session_key}'}
 
         # 🔄 Devices ophalen via REST API en verwerken
-        self.fetch_devices_via_api(session_key)
+        self.fetch_devices_via_api(self.session_key)
 
         # 🌐 Start WebSocket
         self.ws = websocket.WebSocketApp(
-                ws_url,
-                header=headers,
-                on_open=self.on_open,
-                on_message=self.on_message,
-                on_error=self.on_error,
-                on_close=self.on_close
+            ws_url,
+            header=headers,
+            on_open=self.on_open,
+            on_message=self.on_message,
+            on_error=self.on_error,
+            on_close=self.on_close
         )
 
-        logger.info("Verbinden met WebSocket...")
-        self.ws.run_forever()
+        def run_ws():
+            logger.info("WebSocket verbinding starten...")
+            self.ws.run_forever()
+
+        self.ws_thread = threading.Thread(target=run_ws)
+        self.ws_thread.start()
+
+    def restart_loop(self):
+        while True:
+            time.sleep(5 * 60)  # elke 5 minuten
+            try:
+                logger.info("WebSocket opnieuw verbinden...")
+                if self.ws:
+                    self.ws.close()
+                    self.ws_thread.join()
+                self.connect_websocket()
+            except Exception as e:
+                logger.error(f"Fout bij herstart van WebSocket: {e}")
 
     def on_open(self, ws):
         logger.info("WebSocket verbonden")
@@ -99,12 +123,12 @@ class Traccar:
                         logger.debug(f"[device_id={device_id}] Bericht ontvangen van type '{msgtype}'")
                         try:
                             input_message = {
-                                    "raw"      : item,
-                                    "msgtype"  : msgtype,
-                                    "msghash"  : genereer_hash(json.dumps(item)),
-                                    "received" : int(time.time() * 1000),
-                                    "gateway"  : "lt2",
-                                    "identtype": "TC2"
+                                "raw": item,
+                                "msgtype": msgtype,
+                                "msghash": genereer_hash(json.dumps(item)),
+                                "received": int(time.time() * 1000),
+                                "gateway": "lt2",
+                                "identtype": "TC2"
                             }
                             self.decoder(input_message)
                         except Exception as e:
@@ -115,7 +139,6 @@ class Traccar:
 
     def decoder(self, mqttdata):
         try:
-            """Decodeert en verwerkt één MQTT bericht"""
             rawdata = mqttdata.get("raw", {})
             msgtype = mqttdata.get("msgtype")
             identtype = mqttdata.get("identtype", None)
@@ -134,10 +157,11 @@ class Traccar:
                 logger.warning(f"{msgtype} kent geen identid logica")
                 identid = None
 
-            identity = {"identkey" : f"{identtype}_{identid}",
-                        "identtype": identtype,
-                        "identid"  : identid
-                        }
+            identity = {
+                "identkey": f"{identtype}_{identid}",
+                "identtype": identtype,
+                "identid": identid
+            }
 
             if "protocol" in rawdata:
                 msgtype = f'{msgtype}_{rawdata["protocol"]}'
