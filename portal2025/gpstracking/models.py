@@ -217,6 +217,7 @@ class TrackerGroup(models.Model):
             blank=True,
             related_name='groups'
     )
+
     class Meta:
         ordering = ['smartcode']
 

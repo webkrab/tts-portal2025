@@ -19,6 +19,7 @@ import time
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 env = environ.Env()
+CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[])
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 # Quick-start development settings - unsuitable for production

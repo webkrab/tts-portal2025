@@ -279,7 +279,6 @@ class TrackerInline(admin.TabularInline):
         return formset
 
     def link_origin(self, obj):
-        return "dummy"
         try:
             if not obj.tracker_id:
                 return "Nog niet opgeslagen"

@@ -41,7 +41,6 @@ class Traccar:
         # 🔄 Devices ophalen via REST API en verwerken
         self.fetch_devices_via_api(session_key)
 
-        time.sleep(20)
         # 🌐 Start WebSocket
         self.ws = websocket.WebSocketApp(
                 ws_url,

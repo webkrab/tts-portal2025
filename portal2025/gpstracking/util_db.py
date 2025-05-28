@@ -295,7 +295,7 @@ class GpsTrackingUtilDB:
                     if not existing:
                         tracker_entry['id'] = tid
                         GpsTrackingUtilDB.tracker_buffer[tid] = tracker_entry
-                        print("new", GpsTrackingUtilDB.tracker_buffer[tid])
+
                     else:
                         for k, v in tracker_entry.items():
                             if k not in existing or (
@@ -306,7 +306,6 @@ class GpsTrackingUtilDB:
                             ):
                                 existing[k] = v
                         GpsTrackingUtilDB.tracker_buffer[tid] = existing
-                        print("update", GpsTrackingUtilDB.tracker_buffer[tid])
 
 
         except Exception as e:
@@ -326,7 +325,7 @@ class GpsTrackingUtilDB:
 
         if msg_items:
             TrackerMessage.objects.bulk_create(
-                    [TrackerMessage(**item) for item in msg_items],
+                [TrackerMessage(**item) for item in msg_items],
                     ignore_conflicts=True
             )
             logger.info(f"{len(msg_items)} tracker.messages opgeslagen ({round(time.time() - start, 3)}s)")
@@ -400,7 +399,6 @@ class GpsTrackingUtilDB:
                             t.save(update_fields=list(fieldset))
                         except Exception as ex:
                             logger.exception(f"Fout bij individuele save van tracker {t.id}: {ex}")
-
             logger.info(f"{len(updated_trackers)} tracker.tracker opgeslagen ({round(time.time() - start, 3)}s)")
         else:
             logger.error("0 tracker.trackers opgeslagen")

@@ -6,6 +6,9 @@ from utils.logger import get_logger
 
 from .models import Tracker, TrackerGroup, TrackerIdentifier, TrackerIdentifierType
 
+
+
+
 logger = get_logger(__name__)
 
 
@@ -25,12 +28,12 @@ def create_or_update_sql_view(sender, instance: TrackerGroup, **kwargs):
     for field in fields:
         if field == 'ais_dimensions':
             select_parts.append(
-                    "COALESCE(tracker.ais_length::text || 'm', '?') || ' x ' || COALESCE(tracker.ais_width::text || 'm', '?') AS ais_dimensions"
+                "COALESCE(tracker.ais_length::text || 'm', '?') || ' x ' || COALESCE(tracker.ais_width::text || 'm', '?') AS ais_dimensions"
             )
             view_columns.append('ais_dimensions')
         elif field == 'age_in_sec':
             select_parts.append(
-                    "FLOOR((EXTRACT(EPOCH FROM now()) * 1000 - tracker.position_timestamp) / 1000) AS age_in_sec"
+                "FLOOR((EXTRACT(EPOCH FROM now()) * 1000 - tracker.position_timestamp) / 1000) AS age_in_sec"
             )
             view_columns.append('age_in_sec')
         elif field == 'age_human':
@@ -96,7 +99,7 @@ def create_or_update_sql_view(sender, instance: TrackerGroup, **kwargs):
     INNER JOIN {Tracker.groups.through._meta.db_table} AS tg
         ON tracker.id = tg.tracker_id
     WHERE {where_clause};
-    -- GRANT SELECT ON {view_name} TO django_ro;
+    GRANT SELECT ON {view_name} TO django_ro;
        
     """
     tracker_group_table = Tracker.groups.through._meta.db_table
@@ -149,6 +152,7 @@ def create_or_update_sql_view(sender, instance: TrackerGroup, **kwargs):
             geom_line
         FROM 
             lines;
+        GRANT SELECT ON {view_name}_tracks TO django_ro;
     """
 
     logger.debug(sql_create)
@@ -171,9 +175,9 @@ def ensure_identifier_type_groups_present(sender, instance, action, **kwargs):
     if action in ['post_remove', 'post_clear', 'post_add']:
         current_group_ids = set(instance.groups.values_list('id', flat=True))
         expected_group_ids = set(
-                TrackerGroup.objects.filter(
-                        identifier_types__in=instance.identifiers.values_list('identifier_type', flat=True)
-                ).values_list('id', flat=True)
+            TrackerGroup.objects.filter(
+                identifier_types__in=instance.identifiers.values_list('identifier_type', flat=True)
+            ).values_list('id', flat=True)
         )
         missing_group_ids = expected_group_ids - current_group_ids
         if missing_group_ids:
