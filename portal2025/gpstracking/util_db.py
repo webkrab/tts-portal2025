@@ -1,6 +1,7 @@
 import json
 import threading
 import time
+from uuid import UUID
 from queue import Queue, Empty
 from collections import defaultdict
 
@@ -33,11 +34,13 @@ class GpsTrackingUtilDB:
     SAVE_INTERVAL = 15
 
     tracker_cache: dict[str, TrackerIdentifier] = {}
+    tracker_buffer: dict[UUID, dict] = {}
+    buffer_lock_tracker = threading.Lock()
     _mapping_cache: dict = None
 
     shutdown_event = threading.Event()
     message_queue = Queue()
-    tracker_queue = Queue()
+
 
     # === HULPFUNCTIES ===
 
@@ -59,6 +62,18 @@ class GpsTrackingUtilDB:
 
     @staticmethod
     def create_tracker_identifier(tracker: Tracker, code: str, external_id: str) -> TrackerIdentifier:
+        """
+        Maakt een nieuwe `TrackerIdentifier` aan voor een tracker.
+        Als deze al bestaat voor dezelfde combinatie van tracker en type, wordt de bestaande teruggegeven.
+
+        Args:
+            tracker (Tracker): Het trackerobject waarvoor de identifier wordt aangemaakt.
+            code (str): De identifier type code, bv. 'ICAO', 'TCUID'.
+            external_id (str): De externe identifier (bijv. ICAO-code).
+
+        Returns:
+            TrackerIdentifier: Het nieuw aangemaakte of reeds bestaande identificatieobject.
+        """
         try:
             identifier_type = TrackerIdentifierType.objects.get(code=code)
             return TrackerIdentifier.objects.create(
@@ -158,9 +173,10 @@ class GpsTrackingUtilDB:
     @staticmethod
     def start_tracker_cache_loop():
         def loop():
-            while not GpsTrackingUtilDB.shutdown_event.is_set():
-                time.sleep(GpsTrackingUtilDB.CACHE_REFRESH_INTERVAL)
-                GpsTrackingUtilDB.refresh_tracker_cache()
+            while True:
+                while not GpsTrackingUtilDB.shutdown_event.is_set():
+                    time.sleep(GpsTrackingUtilDB.CACHE_REFRESH_INTERVAL)
+                    GpsTrackingUtilDB.refresh_tracker_cache()
         threading.Thread(target=loop, daemon=True).start()
         GpsTrackingUtilDB.refresh_tracker_cache()
 
@@ -220,6 +236,12 @@ class GpsTrackingUtilDB:
 
     @staticmethod
     def process_mqtt_message(message_str: str):
+        """
+        Verwerkt een MQTT-bericht en voegt deze toe aan de buffer.
+
+        Args:
+            message_str (str): JSON-string van het MQTT-bericht
+        """
         try:
             msg = json.loads(message_str)
             data = msg.get("data", {})
@@ -268,7 +290,24 @@ class GpsTrackingUtilDB:
                 position_ts = tracker_entry.get("position_timestamp") or received
                 meta_ts = tracker_entry.get("meta_timestamp") or received
 
-                GpsTrackingUtilDB.tracker_queue.put((tid, tracker_entry))
+                with GpsTrackingUtilDB.buffer_lock_tracker:
+                    existing = GpsTrackingUtilDB.tracker_buffer.get(tid)
+                    if not existing:
+                        tracker_entry['id'] = tid
+                        GpsTrackingUtilDB.tracker_buffer[tid] = tracker_entry
+                        print("new", GpsTrackingUtilDB.tracker_buffer[tid])
+                    else:
+                        for k, v in tracker_entry.items():
+                            if k not in existing or (
+                                k in ["altitude", "speed", "course", "position", "position_timestamp"]
+                                and (existing.get("position_timestamp") is None or existing["position_timestamp"] <= position_ts)
+                            ) or (
+                                existing.get("meta_timestamp") is None or existing["meta_timestamp"] <= meta_ts
+                            ):
+                                existing[k] = v
+                        GpsTrackingUtilDB.tracker_buffer[tid] = existing
+                        print("update", GpsTrackingUtilDB.tracker_buffer[tid])
+
 
         except Exception as e:
             logger.exception(f"Fout bij verwerken van MQTT bericht: {e}")
@@ -277,6 +316,7 @@ class GpsTrackingUtilDB:
     def save_buffer_to_db():
         start = time.time()
 
+        # === TrackerMessages verwerken ===
         msg_items = []
         while not GpsTrackingUtilDB.message_queue.empty():
             try:
@@ -286,8 +326,8 @@ class GpsTrackingUtilDB:
 
         if msg_items:
             TrackerMessage.objects.bulk_create(
-                [TrackerMessage(**item) for item in msg_items],
-                ignore_conflicts=True  # On error ignore record
+                    [TrackerMessage(**item) for item in msg_items],
+                    ignore_conflicts=True
             )
             logger.info(f"{len(msg_items)} tracker.messages opgeslagen ({round(time.time() - start, 3)}s)")
         else:
@@ -295,51 +335,60 @@ class GpsTrackingUtilDB:
 
         start = time.time()
 
-        tracker_updates = {}
-        while not GpsTrackingUtilDB.tracker_queue.empty():
-            try:
-                tid, update = GpsTrackingUtilDB.tracker_queue.get_nowait()
-                tracker_updates[tid] = update  # Last write wins
-            except Empty:
-                break
+        # === Tracker status-updates verwerken ===
+        with GpsTrackingUtilDB.buffer_lock_tracker:
+            tracker_items = list(GpsTrackingUtilDB.tracker_buffer.values())
+            GpsTrackingUtilDB.tracker_buffer.clear()
 
-        if tracker_updates:
-            ids = list(tracker_updates.keys())
+        if tracker_items:
+            ids = [item['id'] for item in tracker_items]
             existing_trackers = {t.id: t for t in Tracker.objects.filter(id__in=ids)}
             updated_trackers = []
             fields_per_tracker = {}
             valid_fields = {f.name for f in Tracker._meta.get_fields()}
 
-            for tid, item in tracker_updates.items():
-                print(tid, item)
+            # Log ontbrekende trackers
+            missing_ids = set(ids) - existing_trackers.keys()
+            if missing_ids:
+                logger.warning(f"{len(missing_ids)} tracker.ids niet gevonden in DB: {missing_ids}")
+
+            for item in tracker_items:
+                tid = item['id']
                 tracker = existing_trackers.get(tid)
                 if not tracker:
                     continue
+
                 changed = set()
                 for key, val in item.items():
-                    if not val or key == 'id' or key not in valid_fields:
+                    if key == 'id' or key not in valid_fields:
                         continue
 
+                    # Skip None en lege strings (voor strings)
+                    if val is None or (isinstance(val, str) and val.strip() == ""):
+                        continue
+
+                    current_value = getattr(tracker, key)
+
                     if key in ['custom_name', 'icon']:
-                        print("get", getattr(tracker, key))
-                        current_value = getattr(tracker, key)
                         if current_value is None or str(current_value).strip() == "":
                             setattr(tracker, key, val)
-                            print("set",key, val )
                             changed.add(key)
                     else:
-                        setattr(tracker, key, val)
-                        changed.add(key)
+                        if current_value != val:
+                            setattr(tracker, key, val)
+                            changed.add(key)
 
                 if changed:
                     updated_trackers.append(tracker)
                     fields_per_tracker[tracker.pk] = changed
 
+            # === Groepeer per unieke veldenset ===
             grouped = defaultdict(list)
             for tracker in updated_trackers:
                 fieldset = frozenset(fields_per_tracker[tracker.pk])
                 grouped[fieldset].append(tracker)
 
+            # === Bulk update per veldenset ===
             for fieldset, group in grouped.items():
                 try:
                     Tracker.objects.bulk_update(group, list(fieldset))
@@ -351,21 +400,29 @@ class GpsTrackingUtilDB:
                             t.save(update_fields=list(fieldset))
                         except Exception as ex:
                             logger.exception(f"Fout bij individuele save van tracker {t.id}: {ex}")
+
             logger.info(f"{len(updated_trackers)} tracker.tracker opgeslagen ({round(time.time() - start, 3)}s)")
         else:
             logger.error("0 tracker.trackers opgeslagen")
 
     @staticmethod
     def start_save_loop():
+        """
+        Start een achtergrondproces dat periodiek de buffers opslaat in de database.
+        """
         def loop():
-            while not GpsTrackingUtilDB.shutdown_event.is_set():
-                time.sleep(GpsTrackingUtilDB.SAVE_INTERVAL)
-                GpsTrackingUtilDB.save_buffer_to_db()
+            while True:
+                while not GpsTrackingUtilDB.shutdown_event.is_set():
+                    time.sleep(GpsTrackingUtilDB.SAVE_INTERVAL)
+                    GpsTrackingUtilDB.save_buffer_to_db()
         threading.Thread(target=loop, daemon=True).start()
         logger.info(f"Start buffer schrijf-loop elke {GpsTrackingUtilDB.SAVE_INTERVAL} seconden.")
 
     @staticmethod
     def start_mqtt_subscriber():
+        """
+        Start de MQTT-subscriber en koppel het berichtverwerkingssysteem.
+        """
         client = TTSmqtt.start_subscriber(GpsTrackingUtilDB.MQTT_CLIENT_NAME, GpsTrackingUtilDB.MQTT_TOPIC)
         if not client:
             logger.error("Kon MQTT-subscriber niet starten.")

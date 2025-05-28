@@ -116,7 +116,6 @@ class Traccar:
 
     def decoder(self, mqttdata):
         try:
-            """Decodeert en verwerkt één MQTT bericht"""
             rawdata = mqttdata.get("raw", {})
             msgtype = mqttdata.get("msgtype")
             identtype = mqttdata.get("identtype", None)
