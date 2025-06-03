@@ -217,6 +217,7 @@ class TrackerGroup(models.Model):
             blank=True,
             related_name='groups'
     )
+    ttl = models.IntegerField(default=(365*24*60), verbose_name='Time to live (minutes)', help_text="Leeftijd in minuten, voordat tracker in wordt verborgen in deze groep.")
 
     class Meta:
         ordering = ['smartcode']
@@ -471,7 +472,7 @@ class TrackerDecoder(models.Model):
     identifier_type = models.ForeignKey(TrackerIdentifierType, on_delete=models.PROTECT, related_name='decoder_identifiertypes')
     msgtype = models.CharField(max_length=30, default=None)
     mapping = models.JSONField(default=dict, blank=True)
-    ttl = models.IntegerField(default=90, help_text="Leeftijd in dagen van bericht met dit decodertype, voordat deze wordt verwijderd")
+    ttl = models.IntegerField(default=90, verbose_name='Time to live (days)', help_text="Leeftijd in dagen van bericht met dit decodertype, voordat deze wordt verwijderd")
 
     class Meta:
         ordering = ['identifier_type__code', 'msgtype']

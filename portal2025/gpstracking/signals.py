@@ -3,6 +3,7 @@ from django.db.models.signals import m2m_changed, post_delete, post_save
 from django.dispatch import receiver
 
 from utils.logger import get_logger
+from gpstracking.util_db import GpsTrackingUtilDB
 
 from .models import Tracker, TrackerGroup, TrackerIdentifier, TrackerIdentifierType
 
@@ -11,161 +12,34 @@ from .models import Tracker, TrackerGroup, TrackerIdentifier, TrackerIdentifierT
 
 logger = get_logger(__name__)
 
-
 @receiver(post_save, sender=TrackerGroup)
 def create_or_update_sql_view(sender, instance: TrackerGroup, **kwargs):
-    view_name = f"v_tracker_group_{instance.smartcode}".lower()
-    fields = instance.visible_fields
+    sql_main, sql_track, view_name = GpsTrackingUtilDB.generate_tracker_view_sql(instance)
 
-    if not fields:
+    if not sql_main or not sql_track:
+        logger.warning(f"Views niet aangemaakt voor groep '{instance.smartcode}' (mogelijk geen velden geselecteerd).")
         return
 
-    valid_fields = {f.name for f in Tracker._meta.fields if f.concrete}
+    sql_drop_main = f"DROP VIEW IF EXISTS {view_name};"
+    sql_drop_track = f"DROP VIEW IF EXISTS {view_name}_tracks;"
 
-    view_columns = []
-    select_parts = []
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(sql_drop_main)
+            cursor.execute(sql_main)
+            cursor.execute(sql_drop_track)
+            cursor.execute(sql_track)
+        logger.info(f"SQL views aangemaakt of bijgewerkt voor groep '{instance.smartcode}'")
+    except Exception as e:
+        logger.error(f"Fout bij aanmaken van views voor '{view_name}': {e}")
 
-    for field in fields:
-        if field == 'ais_dimensions':
-            select_parts.append(
-                "COALESCE(tracker.ais_length::text || 'm', '?') || ' x ' || COALESCE(tracker.ais_width::text || 'm', '?') AS ais_dimensions"
-            )
-            view_columns.append('ais_dimensions')
-        elif field == 'age_in_sec':
-            select_parts.append(
-                "FLOOR((EXTRACT(EPOCH FROM now()) * 1000 - tracker.position_timestamp) / 1000) AS age_in_sec"
-            )
-            view_columns.append('age_in_sec')
-        elif field == 'age_human':
-            select_parts.append("""
-                TRIM(BOTH ' ' FROM
-                    CONCAT_WS(' ',
-                        CASE WHEN FLOOR((EXTRACT(EPOCH FROM now()) * 1000 - tracker.position_timestamp) / 86400000) > 0 THEN
-                            FLOOR((EXTRACT(EPOCH FROM now()) * 1000 - tracker.position_timestamp) / 86400000)::int || 'd'
-                        END,
-                        CASE WHEN MOD(FLOOR((EXTRACT(EPOCH FROM now()) * 1000 - tracker.position_timestamp) / 3600000), 24) > 0 THEN
-                            MOD(FLOOR((EXTRACT(EPOCH FROM now()) * 1000 - tracker.position_timestamp) / 3600000), 24)::int || 'h'
-                        END,
-                        CASE WHEN MOD(FLOOR((EXTRACT(EPOCH FROM now()) * 1000 - tracker.position_timestamp) / 60000), 60) > 0 THEN
-                            MOD(FLOOR((EXTRACT(EPOCH FROM now()) * 1000 - tracker.position_timestamp) / 60000), 60)::int || 'm'
-                        END,
-                        CASE WHEN MOD(FLOOR((EXTRACT(EPOCH FROM now()) * 1000 - tracker.position_timestamp) / 1000), 60) > 0 THEN
-                            MOD(FLOOR((EXTRACT(EPOCH FROM now()) * 1000 - tracker.position_timestamp) / 1000), 60)::int || 's'
-                        END
-                    )
-                ) AS age_human
-            """)
-            view_columns.append('age_display')
-
-        elif field == 'display_name':
-            select_parts.append("""
-                    COALESCE(
-                        tracker.custom_name,
-                        (
-                            SELECT STRING_AGG(ti.identkey, ' | ')
-                            FROM gpstracking_trackeridentifier ti
-                            WHERE ti.tracker_id = tracker.id
-                        ),
-                        tracker.id::text
-                    ) AS display_name
-                """)
-            view_columns.append('display_name')
-
-        elif field in valid_fields:
-            select_parts.append(f"tracker.{field}")
-            view_columns.append(field)
-        else:
-            logger.warning(f"'{field}' is not a valid field of Tracker and was skipped.")
-
-    if not select_parts:
-        logger.warning(f"No valid fields to generate SQL view for group {instance.smartcode}")
-        return
-
-    select_clause = ', '.join(select_parts)
-    column_clause = ', '.join(view_columns)
-
-    where_clause = f"tg.trackergroup_id = {instance.pk}"
-
-    if instance.area:
-        ewkt = instance.area.ewkt
-        geom_filter = f"ST_Within(tracker.position::geometry, ST_GeomFromEWKT('{ewkt}'))"
-        where_clause += f" AND {geom_filter}"
-
-    sql_drop = f"DROP VIEW IF EXISTS {view_name};"
-    sql_create = f"""
-    CREATE VIEW {view_name} ({column_clause}) AS
-    SELECT {select_clause}
-    FROM {Tracker._meta.db_table} AS tracker
-    INNER JOIN {Tracker.groups.through._meta.db_table} AS tg
-        ON tracker.id = tg.tracker_id
-    WHERE {where_clause};
-    GRANT SELECT ON {view_name} TO django_ro;
-       
-    """
-    tracker_group_table = Tracker.groups.through._meta.db_table
-
-    tracker_group_table = Tracker.groups.through._meta.db_table
-
-    tracker_group_table = Tracker.groups.through._meta.db_table
-
-    sql_history = f""" 
-        DROP VIEW IF EXISTS {view_name}_tracks;
-        CREATE OR REPLACE VIEW {view_name}_tracks AS
-        WITH recent_positions AS (
-            SELECT 
-                ti.tracker_id,
-                tm.position,
-                tm.position_timestamp
-            FROM 
-                gpstracking_trackermessage tm
-            JOIN 
-                gpstracking_trackeridentifier ti ON tm.tracker_identifier_id = ti.id
-            JOIN 
-                {tracker_group_table} tg ON ti.tracker_id = tg.tracker_id
-            WHERE 
-                tg.trackergroup_id = {instance.pk}
-                AND tm.position IS NOT NULL
-                AND tm.position_timestamp >= (EXTRACT(EPOCH FROM NOW()) * 1000) - (60 * 60 * 1000)
-        ),
-        ordered_points AS (
-            SELECT 
-                tracker_id,
-                position,
-                position_timestamp
-            FROM 
-                recent_positions
-            ORDER BY 
-                tracker_id,
-                position_timestamp
-        ),
-        lines AS (
-            SELECT 
-                tracker_id,
-                ST_SetSRID(ST_MakeLine(position::geometry ORDER BY position_timestamp), 4326)::geometry(LineString, 4326) AS geom_line
-            FROM 
-                ordered_points
-            GROUP BY 
-                tracker_id
-        )
-        SELECT 
-            tracker_id,
-            geom_line
-        FROM 
-            lines;
-        GRANT SELECT ON {view_name}_tracks TO django_ro;
-    """
-
-    logger.debug(sql_create)
-    with connection.cursor() as cursor:
-        cursor.execute(sql_drop)
-        cursor.execute(sql_create)
-        cursor.execute(sql_history)
 
 
 @receiver(post_delete, sender=TrackerGroup)
 def drop_sql_view_on_delete(sender, instance: TrackerGroup, **kwargs):
     view_name = f"v_tracker_group_{instance.smartcode}".lower()
-    sql = f"DROP VIEW IF EXISTS {view_name};"
+    sql = f"""DROP VIEW IF EXISTS {view_name};        
+              DROP VIEW IF EXISTS {view_name}_tracks;"""
     with connection.cursor() as cursor:
         cursor.execute(sql)
 

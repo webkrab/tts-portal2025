@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib import admin
 from django.core.exceptions import ValidationError
+from django.db import connection
 from django.utils.safestring import mark_safe
 from django.utils.text import slugify
 from django.db import models
@@ -19,6 +20,20 @@ from .models import (
     default_tracker_visible_fields,
     get_tracker_field_choices,
 )
+
+
+
+def view_exists(view_name):
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT EXISTS (
+                SELECT 1
+                FROM information_schema.views
+                WHERE table_name = %s
+            );
+        """, [view_name])
+        return cursor.fetchone()[0]
+
 
 admin.site.site_header = "TTS Beheer"
 admin.site.site_title = "TTS Beheerportal"
@@ -426,10 +441,7 @@ class TrackerIdentifierAdmin(admin.ModelAdmin):
 
 @admin.register(TrackerGroup)
 class TrackerGroupAdmin(LeafletGeoAdmin):
-    list_display = ('smartcode', 'name', 'tracker_count')
-    form = TrackerGroupAdminForm
-    search_fields = ('name', 'smartcode')
-    inlines = [TrackerInline]
+    list_display = ('smartcode', 'name', 'tracker_count', 'positie_view_exist', 'track_view_exist')
 
     fieldsets = (
             (None, {
@@ -444,8 +456,8 @@ class TrackerGroupAdmin(LeafletGeoAdmin):
                     )
             }),
 
-            ('FIELDS IN DB-VIEW', {
-                    'fields': ('visible_fields',),
+            ('VIEW OPTIONS', {
+                    'fields': ('visible_fields','ttl'),
                     'description': 'Alleen de geselecteerde velden worden meegegeven in de view'
             }),
             ('TRACKER GROUPS', {
@@ -458,6 +470,19 @@ class TrackerGroupAdmin(LeafletGeoAdmin):
         return obj.trackers.count()
 
     tracker_count.short_description = "Trackers in group"
+
+    def positie_view_exist(self, obj):
+        view_name = f"v_tracker_group_{obj.smartcode}".lower()
+        return "🟢" if view_exists(view_name) else "❌"
+    positie_view_exist.short_description = "Positie View in DB"
+
+    def track_view_exist(self, obj):
+        view_name = f"v_tracker_group_{obj.smartcode}".lower() + "_tracks"
+        return "🟢" if view_exists(view_name) else "❌"
+    track_view_exist.short_description = "Track View in DB"
+    form = TrackerGroupAdminForm
+    search_fields = ('name', 'smartcode')
+    inlines = [TrackerInline]
 
     def get_formsets_with_inlines(self, request, obj=None):
         for inline in self.get_inline_instances(request, obj):

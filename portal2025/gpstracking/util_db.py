@@ -21,7 +21,7 @@ from utils.logger import get_logger
 import utils.mqtt as TTSmqtt
 
 logger = get_logger(__name__)
-
+# === HULPFUNCTIES ===
 
 class GpsTrackingUtilDB:
     """
@@ -42,7 +42,188 @@ class GpsTrackingUtilDB:
     message_queue = Queue()
 
 
-    # === HULPFUNCTIES ===
+    @staticmethod
+    def generate_tracker_view_sql(instance):
+        view_name = f"v_tracker_group_{instance.smartcode}".lower()
+        fields = instance.visible_fields
+
+        if not fields:
+            return None, None, None
+
+        valid_fields = {f.name for f in Tracker._meta.fields if f.concrete}
+        view_columns = []
+        select_parts = []
+
+        for field in fields:
+            if field == 'ais_dimensions':
+                select_parts.append(
+                        "COALESCE(tracker.ais_length::text || 'm', '?') || ' x ' || COALESCE(tracker.ais_width::text || 'm', '?') AS ais_dimensions"
+                )
+                view_columns.append('ais_dimensions')
+            elif field == 'age_in_sec':
+                select_parts.append(
+                        "FLOOR((EXTRACT(EPOCH FROM now()) * 1000 - tracker.position_timestamp) / 1000) AS age_in_sec"
+                )
+                view_columns.append('age_in_sec')
+            elif field == 'age_human':
+                select_parts.append("""
+                    TRIM(BOTH ' ' FROM
+                        CONCAT_WS(' ',
+                            CASE WHEN FLOOR((EXTRACT(EPOCH FROM now()) * 1000 - tracker.position_timestamp) / 86400000) > 0 THEN
+                                FLOOR((EXTRACT(EPOCH FROM now()) * 1000 - tracker.position_timestamp) / 86400000)::int || 'd'
+                            END,
+                            CASE WHEN MOD(FLOOR((EXTRACT(EPOCH FROM now()) * 1000 - tracker.position_timestamp) / 3600000), 24) > 0 THEN
+                                MOD(FLOOR((EXTRACT(EPOCH FROM now()) * 1000 - tracker.position_timestamp) / 3600000), 24)::int || 'h'
+                            END,
+                            CASE WHEN MOD(FLOOR((EXTRACT(EPOCH FROM now()) * 1000 - tracker.position_timestamp) / 60000), 60) > 0 THEN
+                                MOD(FLOOR((EXTRACT(EPOCH FROM now()) * 1000 - tracker.position_timestamp) / 60000), 60)::int || 'm'
+                            END,
+                            CASE WHEN MOD(FLOOR((EXTRACT(EPOCH FROM now()) * 1000 - tracker.position_timestamp) / 1000), 60) > 0 THEN
+                                MOD(FLOOR((EXTRACT(EPOCH FROM now()) * 1000 - tracker.position_timestamp) / 1000), 60)::int || 's'
+                            END
+                        )
+                    ) AS age_human
+                """)
+                view_columns.append('age_human')
+            elif field == 'display_name':
+                select_parts.append("""
+                    COALESCE(
+                        tracker.custom_name,
+                        (
+                            SELECT STRING_AGG(ti.identkey, ' | ')
+                            FROM gpstracking_trackeridentifier ti
+                            WHERE ti.tracker_id = tracker.id
+                        ),
+                        tracker.id::text
+                    ) AS display_name
+                """)
+                view_columns.append('display_name')
+            elif field in valid_fields:
+                select_parts.append(f"tracker.{field}")
+                view_columns.append(field)
+            else:
+                logger.warning(f"'{field}' is not a valid field of Tracker and was skipped.")
+
+        if not select_parts:
+            return None, None, None
+
+        select_clause = ', '.join(select_parts)
+        column_clause = ', '.join(view_columns)
+
+        # TTL in milliseconden
+        ttl_ms = instance.ttl * 60 * 1000
+        where_clause = f"""
+            tg.trackergroup_id = {instance.pk}
+            AND tracker.position_timestamp >= (EXTRACT(EPOCH FROM now()) * 1000 - {ttl_ms})
+        """
+
+        if instance.area:
+            ewkt = instance.area.ewkt
+            geom_filter = f"ST_Within(tracker.position::geometry, ST_GeomFromEWKT('{ewkt}'))"
+            where_clause += f" AND {geom_filter}"
+
+        tracker_group_table = Tracker.groups.through._meta.db_table
+
+        sql_main = f"""
+        CREATE VIEW {view_name} ({column_clause}) AS
+        SELECT {select_clause}
+        FROM {Tracker._meta.db_table} AS tracker
+        INNER JOIN {tracker_group_table} AS tg
+            ON tracker.id = tg.tracker_id
+        WHERE {where_clause};
+        GRANT SELECT ON {view_name} TO django_ro;
+        """
+
+        # max 60 minuten voor tracks
+        track_ttl_minutes = min(instance.ttl, 60)
+        track_ttl_ms = track_ttl_minutes * 60 * 1000
+
+        sql_track = f"""
+        CREATE OR REPLACE VIEW {view_name}_tracks AS
+        WITH recent_positions AS (
+            SELECT 
+                ti.tracker_id,
+                tm.position,
+                tm.position_timestamp
+            FROM 
+                gpstracking_trackermessage tm
+            JOIN 
+                gpstracking_trackeridentifier ti ON tm.tracker_identifier_id = ti.id
+            JOIN 
+                {tracker_group_table} tg ON ti.tracker_id = tg.tracker_id
+            WHERE 
+                tg.trackergroup_id = {instance.pk}
+                AND tm.position IS NOT NULL
+                AND tm.position_timestamp >= (EXTRACT(EPOCH FROM NOW()) * 1000 - {track_ttl_ms})
+        ),
+        ordered_points AS (
+            SELECT 
+                tracker_id,
+                position,
+                position_timestamp
+            FROM 
+                recent_positions
+            ORDER BY 
+                tracker_id,
+                position_timestamp
+        ),
+        lines AS (
+            SELECT 
+                tracker_id,
+                ST_SetSRID(ST_MakeLine(position::geometry ORDER BY position_timestamp), 4326)::geometry(LineString, 4326) AS geom_line
+            FROM 
+                ordered_points
+            GROUP BY 
+                tracker_id
+        ),
+        grouped_trackers AS (
+            SELECT 
+                t.id AS tracker_id,
+                t.custom_name
+            FROM 
+                {Tracker._meta.db_table} t
+            JOIN 
+                {tracker_group_table} tg ON t.id = tg.tracker_id
+            WHERE 
+                tg.trackergroup_id = {instance.pk}
+        ),
+        joined AS (
+            SELECT 
+                gt.tracker_id,
+                l.geom_line,
+                COALESCE(
+                    t.custom_name,
+                    (
+                        SELECT STRING_AGG(ti.identkey, ' | ')
+                        FROM gpstracking_trackeridentifier ti
+                        WHERE ti.tracker_id = gt.tracker_id
+                    ),
+                    gt.tracker_id::text
+                ) AS display_name
+            FROM 
+                grouped_trackers gt
+            LEFT JOIN lines l ON gt.tracker_id = l.tracker_id
+            JOIN {Tracker._meta.db_table} t ON t.id = gt.tracker_id
+        ),
+        ranked AS (
+            SELECT 
+                joined.*,
+                ROW_NUMBER() OVER (ORDER BY display_name) AS rn
+            FROM joined
+        )
+        SELECT
+            tracker_id,
+            geom_line,
+            display_name,
+            SUBSTRING('0123456789abcdef' FROM ((rn - 1) % 16 + 1)::int FOR 1) AS colorcode
+        FROM 
+            ranked
+        ORDER BY display_name;
+        GRANT SELECT ON {view_name}_tracks TO django_ro;
+        """
+
+        return sql_main.strip(), sql_track.strip(), view_name
+
 
     @staticmethod
     def get_decoder_field_mapping():
@@ -106,7 +287,7 @@ class GpsTrackingUtilDB:
     def tc_group_management(tc_group, identifier_type, tracker):  #TODO opruimen naar migratie
         if tracker.groups.exists():  # correcte check
             return
-
+        #TODO dit moet opgeruimd worden!
         convert_table = {
             "ZZ_TEMP_TC1_6" : "camende",
             "ZZ_TEMP_TC1_7" : "fwater",

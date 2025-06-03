@@ -16,6 +16,7 @@ class GpstrackingConfig(AppConfig):
         from gpstracking.util_db import GpsTrackingUtilDB
 
         GpsTrackingUtilDB().start_save_loop()
+#        GpsTrackingUtilDB().start_mqtt_subscriber()
 
         def start_traccar():
             from gpstracking.Api_traccar import Traccar
@@ -30,3 +31,4 @@ class GpstrackingConfig(AppConfig):
         threading.Thread(target=start_traccar2, daemon=True).start()
 
         logger.info("Traccar background service gestart")
+
