@@ -261,7 +261,7 @@ class TrackerGroup(models.Model):
             blank=True,
             related_name='groups'
     )
-    ttl = models.IntegerField(default=(365*24*60), verbose_name='Time to live (minutes)', help_text="Leeftijd in minuten, voordat tracker in wordt verborgen in deze groep.")
+    ttl = models.IntegerField(default=(2*60), help_text="Leeftijd in minuten, voordat tracker in wordt verborgen in deze groep.")
 
     class Meta:
         ordering = ['smartcode']

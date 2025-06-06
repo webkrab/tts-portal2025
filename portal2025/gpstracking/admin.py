@@ -503,13 +503,11 @@ class TrackerGroupAdmin(LeafletGeoAdmin):
     def positie_view_exist(self, obj):
         view_name = f"v_tracker_group_{obj.smartcode}".lower()
         return "🟢" if view_exists(view_name) else "❌"
-
     positie_view_exist.short_description = "Positie View in DB"
 
     def track_view_exist(self, obj):
         view_name = f"v_tracker_group_{obj.smartcode}".lower() + "_tracks"
         return "🟢" if view_exists(view_name) else "❌"
-
     track_view_exist.short_description = "Track View in DB"
     form = TrackerGroupAdminForm
     search_fields = ('name', 'smartcode')
