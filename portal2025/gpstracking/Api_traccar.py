@@ -31,14 +31,6 @@ class Traccar:
         self.IDENTTYPE = TrackerIdentifierType.objects.all()
 
     def start(self):
-        logger.info("Traccar1 client starting...")
-        self.session_key = get_session_key(EMAIL, PASSWORD, TRACCAR_URL)
-        if not self.session_key:
-            logger.error("Kan geen sessie opzetten, afsluiten.")
-            return
-
-        self.connect_websocket()
-
         # Start de herstart-timer in een aparte thread
         threading.Thread(target=self.restart_loop, daemon=True).start()
 
@@ -68,15 +60,20 @@ class Traccar:
 
     def restart_loop(self):
         while True:
-            time.sleep(5 * 60)  # elke 5 minuten
             try:
                 logger.info("WebSocket opnieuw verbinden...")
                 if self.ws:
                     self.ws.close()
                     self.ws_thread.join()
+                logger.info("Traccar client starting...")
+                self.session_key = get_session_key(EMAIL, PASSWORD, TRACCAR_URL)
+                if not self.session_key:
+                    logger.error("Kan geen sessie opzetten, afsluiten.")
+
                 self.connect_websocket()
             except Exception as e:
-                logger.error(f"Fout bij herstart van WebSocket: {e}")
+                logger.error(f"Fout bij (her)start van WebSocket: {e}")
+            time.sleep(5 * 60)  # elke 5 minuten
 
     def on_open(self, ws):
         logger.info("WebSocket verbonden")

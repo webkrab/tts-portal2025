@@ -19,14 +19,14 @@ class GpstrackingConfig(AppConfig):
 #        GpsTrackingUtilDB().start_mqtt_subscriber()
 
         def start_traccar():
-            from gpstracking.Api_traccar import Traccar
-            Traccar().start()
+            from gpstracking.Api_traccar import Traccar as tc1
+            tc1().start()
 
         threading.Thread(target=start_traccar, daemon=True).start()
 
         def start_traccar2():
             from gpstracking.Api_traccar2 import Traccar as tc2
-            #tc2().start()
+            tc2().start()
 
         threading.Thread(target=start_traccar2, daemon=True).start()
 

@@ -9,6 +9,8 @@ from django.db.models import Field
 from django.contrib.gis.geos import MultiPolygon, Polygon, Point
 from leaflet.admin import LeafletGeoAdmin
 
+import socket
+
 from .models import (
     Tracker,
     TrackerDecoder,
@@ -20,7 +22,6 @@ from .models import (
     default_tracker_visible_fields,
     get_tracker_field_choices,
 )
-
 
 
 def view_exists(view_name):
@@ -35,7 +36,7 @@ def view_exists(view_name):
         return cursor.fetchone()[0]
 
 
-admin.site.site_header = "TTS Beheer"
+admin.site.site_header = f"TTS Beheer - {socket.gethostname()}"
 admin.site.site_title = "TTS Beheerportal"
 
 
@@ -256,13 +257,14 @@ class TrackerIdentifierInline(admin.TabularInline):
     linked_groups.short_description = "Automatisch gekoppelde groepen"
 
     def latest_message_timestamp(self, obj):
-        message = obj.messages.order_by('-message_timestamp').first()
-        return message.message_timestamp_display if message else "-"
+        # message = obj.messages.order_by('-message_timestamp').first()
+        return 0  # message.message_timestamp_display if message else "-"
 
     latest_message_timestamp.short_description = "Laatst seen"
 
     def latest_message_age_in_sec(self, obj):
-        message = obj.messages.order_by('-message_timestamp').first()
+        # message = obj.messages.order_by('-message_timestamp').first()
+        message = None
         if not message or not message.age_in_sec:
             return "-"
         total_seconds = message.age_in_sec // 1000
@@ -331,11 +333,38 @@ class TrackerAdmin(LeafletGeoAdmin):
             'ais_name',
             'adsb_registration',
             'identifiers__identkey',
+            'standplaats__wps_naam',
+            'standplaats__wps_abv'
     )
     list_filter = ('identifiers__identifier_type', 'groups')
     filter_horizontal = ('groups',)
     inlines = [TrackerIdentifierInline]
     readonly_fields = ('inferred_group_list', 'meta_timestamp_display', 'position_timestamp_display')
+
+    fieldsets = (
+            # ('Laatste update', {
+            #         'fields': ('meta_timestamp_display', 'position_timestamp_display'),
+            # }),
+            ('Algemeen', {
+                    'fields': ('custom_name', 'standplaats', 'icon')
+            }),
+            ('Status', {
+                    'fields': ('gms_status', 'alarm_type')
+            }),
+            ('AIS-informatie', {
+                    'fields': ('ais_type', 'ais_name', 'ais_callsign', 'ais_length', 'ais_width'),
+            }),
+            ('ADSB-informatie', {
+                    'fields': ('adsb_type', 'adsb_registration', 'adsb_callsign'),
+
+            }),
+            ('Positie', {
+                    'fields': ('position', 'altitude', 'speed', 'course'),
+            }),
+            ('Groepen', {
+                    'fields': ('groups', 'inferred_group_list'),
+            })
+    )
 
     def inferred_group_list(self, obj):
         groups = TrackerGroup.objects.filter(
@@ -441,7 +470,7 @@ class TrackerIdentifierAdmin(admin.ModelAdmin):
 
 @admin.register(TrackerGroup)
 class TrackerGroupAdmin(LeafletGeoAdmin):
-    list_display = ('smartcode', 'name', 'tracker_count', 'positie_view_exist', 'track_view_exist')
+    list_display = ('smartcode', 'name', 'tracker_count', 'ttl', 'positie_view_exist', 'track_view_exist')
 
     fieldsets = (
             (None, {
@@ -457,7 +486,7 @@ class TrackerGroupAdmin(LeafletGeoAdmin):
             }),
 
             ('VIEW OPTIONS', {
-                    'fields': ('visible_fields','ttl'),
+                    'fields'     : ('visible_fields', 'ttl'),
                     'description': 'Alleen de geselecteerde velden worden meegegeven in de view'
             }),
             ('TRACKER GROUPS', {
@@ -474,11 +503,13 @@ class TrackerGroupAdmin(LeafletGeoAdmin):
     def positie_view_exist(self, obj):
         view_name = f"v_tracker_group_{obj.smartcode}".lower()
         return "🟢" if view_exists(view_name) else "❌"
+
     positie_view_exist.short_description = "Positie View in DB"
 
     def track_view_exist(self, obj):
         view_name = f"v_tracker_group_{obj.smartcode}".lower() + "_tracks"
         return "🟢" if view_exists(view_name) else "❌"
+
     track_view_exist.short_description = "Track View in DB"
     form = TrackerGroupAdminForm
     search_fields = ('name', 'smartcode')

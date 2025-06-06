@@ -11,6 +11,7 @@ from django.db import models
 from django.db.models import UniqueConstraint
 from django.utils.functional import lazy
 from django.utils.translation import gettext_lazy as _
+from utils.models import City
 
 
 def get_alarm_choises():
@@ -55,6 +56,49 @@ def get_alarm_choises():
             ('removing', 'Verwijderd'),
     ]
     return ALARM_CHOICES
+
+def get_gms_status_choices():
+    # GMS | Beschrijving                             | BRW | BRW Beschrijving       | AMB | AMB Beschrijving              | POL | POL Beschrijving
+    # ---------------------------------------------------------------------------------------------------------------------------------------------
+    # 0   | Noodsignaal                              |     |                         |     |                               |     |
+    # 1   | Eigen initiatief                         |     |                         |     |                               |     |
+    # 2   | Aanvraag spraak                          |  7  | Spraakaanvraag          |  8  | Spraakaanvraag                |     |
+    # 3   | Informatievraag                          |     |                         |     |                               |     |
+    # 4   | Aanrijdend naar incident                 |  1  | Uitgerukt               |  1  | Verstrek                      |     |
+    # 5   | Ter plaatse                              |  2  | Ter plaatse             |  2  | Aankomst                      |     |
+    # 6   | Aanrijdend naar bestemming               |  3  | Ingerukt                |  3  | Vertrek met patient           |     |
+    # 7   | Binnenkort beschikbaar                   |     |                         |  4  | Aankomst met patient          |     |
+    # 8   | Beschikbaar, Onderweg naar standplaats   |  4  | Beschikbaar             |  5  | Vrij melding                  |     |
+    # 9   | Op standplaats                           |  5  | Op kazerne              |  6  | Einde rit / op post           |     |
+    # 10  | Vertraagd inzetbaar                      |     |                         |     |                               |     |
+    # 11  | Buiten dienst                            |  6  | Buiten dienst           |     |                               |     |
+    # 12  | Binnenkort in dienst                     |     |                         |     |                               |     |
+    # 13  | Aanvraag privégesprek                    |     |                         |  7  | Aanvraag Private call         |     |
+    # 14  | aanvraag spraak urgent                   |  9  | Spraakaanvraag urgent   |  9  | Spraakaanvraag urgent         |     |
+    # 15  | Opdracht verstrekt                       | 10  | Opdracht verstrekt      | 10  | Opdracht verstrekt            |     |
+    # 16  | Alarmering ontvangen                     |     |                         |  0  | Alarmering ontvangen          |     |
+
+    GMS_STATUS_CHOICES = [
+        ('0',  'Noodsignaal'),
+        ('1',  'Eigen initiatief'),
+        ('2',  'Aanvraag spraak'),
+        ('3',  'Informatievraag'),
+        ('4',  'Aanrijdend naar incident'),
+        ('5',  'Ter plaatse'),
+        ('6',  'Aanrijdend naar bestemming'),
+        ('7',  'Binnenkort beschikbaar'),
+        ('8',  'Beschikbaar, Onderweg naar standplaats'),
+        ('9',  'Op standplaats'),
+        ('10', 'Vertraagd inzetbaar'),
+        ('11', 'Buiten dienst'),
+        ('12', 'Binnenkort in dienst'),
+        ('13', 'Aanvraag privégesprek'),
+        ('14', 'aanvraag spraak urgent'),
+        ('15', 'Opdracht verstrekt'),
+        ('16', 'Alarmering ontvangen'),
+    ]
+    return GMS_STATUS_CHOICES
+
 
 
 def default_tracker_area():
@@ -242,7 +286,11 @@ class Tracker(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     custom_name = models.CharField(max_length=255, blank=True, null=True, db_index=True, )
     icon = models.CharField(        max_length=32, choices=get_icon_choises(), default='default', blank=True, null=True)
+    standplaats = models.ForeignKey(City, on_delete=models.PROTECT,related_name='trackings', null=True)
+    meta_timestamp = models.BigIntegerField(blank=True, null=True,db_index=True,  help_text="UNIX tijd in ms")
+
     alarm_type = models.CharField(  max_length=32, choices=get_alarm_choises(), verbose_name='Alarmtype', blank=True, null=True)
+    gms_status = models.CharField(max_length=32, choices=get_alarm_choises(), verbose_name='Status', blank=True, null=True)
 
     ais_type = models.CharField(max_length=255, blank=True, null=True)
     ais_name = models.CharField(max_length=255, blank=True, null=True)
@@ -261,7 +309,7 @@ class Tracker(models.Model):
     adsb_type = models.CharField(max_length=255, blank=True, null=True)
     adsb_registration = models.CharField(max_length=255, blank=True, null=True)
     adsb_callsign = models.CharField(max_length=255, blank=True, null=True)
-    meta_timestamp = models.BigIntegerField(blank=True, null=True,db_index=True,  help_text="UNIX tijd in ms")
+
 
     altitude = models.FloatField(blank=True, null=True)
     speed = models.FloatField(blank=True, null=True)
