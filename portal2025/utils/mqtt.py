@@ -2,7 +2,6 @@ import paho.mqtt.client as mqtt
 from django.conf import settings
 from utils.logger import get_logger
 import threading
-import uuid
 import time
 
 logger = get_logger(__name__)
@@ -10,6 +9,7 @@ logger = get_logger(__name__)
 BROKER_IP = settings.MQTT_BROKER_IP
 PORT = settings.MQTT_PORT
 KEEPALIVE = getattr(settings, "MQTT_KEEPALIVE", 120)
+SESSIONCODE = int(time.time())
 
 # Verwachte structuur: { client_name: {"client": mqtt.Client, "client_id": str, "publish": Callable } }
 mqtt_clients: dict[str, dict] = {}
@@ -94,7 +94,7 @@ def on_message(client, userdata, message):
     """
     client_id = userdata.get("client_id", "MQTT Client")
     payload = message.payload.decode("utf-8")
-    logger.info(f"[{client_id}] Ontvangen bericht op {message.topic}: {payload}")
+    logger.debug(f"[{client_id}] Ontvangen bericht op {message.topic}: {payload}")
 
 
 def client_disconnect(client):
@@ -123,11 +123,11 @@ def start_publisher(client_name, topic):
         of None bij fout.
     """
     if client_name in mqtt_clients:
-        logger.info(f"[{client_name}] Hergebruik bestaande MQTT-client.")
+        logger.debug(f"[{client_name}] Hergebruik bestaande MQTT-client.")
         return mqtt_clients[client_name]["publish"]
 
     try:
-        client_id = f"{client_name}_{uuid.uuid4().hex[:8]}"
+        client_id = f"{client_name}_{SESSIONCODE}"
         client = mqtt.Client(client_id=client_id, callback_api_version=mqtt.CallbackAPIVersion.VERSION1)
         client.user_data_set({"client_id": client_id})
         client.on_connect = on_connect
@@ -175,12 +175,12 @@ def start_subscriber(client_name, topic):
         mqtt.Client | None: De MQTT client of None bij fout.
     """
     if client_name in mqtt_clients:
-        logger.info(f"[{client_name}] Hergebruik bestaande MQTT-client.")
-        return mqtt_clients[client_name]["client"]
+        logger.debug(f"[{client_name}] Hergebruik bestaande MQTT-client.")
+        return mqtt_clients[client_name]
 
     logger.info(f"[{client_name}] Probeer verbinding met broker: {BROKER_IP}:{PORT}")
     try:
-        client_id = f"{client_name}_{uuid.uuid4().hex[:8]}"
+        client_id = f"{client_name}_{SESSIONCODE}"
         client = mqtt.Client(client_id=client_id, callback_api_version=mqtt.CallbackAPIVersion.VERSION1)
         client.user_data_set({"client_id": client_id})
         client.on_connect = on_connect

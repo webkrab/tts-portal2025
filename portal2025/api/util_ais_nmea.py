@@ -138,7 +138,7 @@ class Nmea:
                         if new_payload:
                             logger.debug(f"Bericht succesvol gedecodeerd: {new_payload.get('formated', {})}")
                             gateway = new_payload.get("gateway", "onbekend")
-                            NmeaMqtt.publish(MQTT_CLIENT, f"ais/{gateway}/processed", new_payload)
+                                    NmeaMqtt.publish(MQTT_CLIENT, f"ais/{gateway}/processed", new_payload)
                         else:
                             logger.debug("Decoder returneerde geen payload na remapping.")
                     else:

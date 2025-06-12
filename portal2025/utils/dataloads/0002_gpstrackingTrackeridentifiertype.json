@@ -1,0 +1,51 @@
+[
+    {
+    "model": "gpstracking.trackeridentifiertype",
+    "pk": "DMR_RN",
+    "fields": {
+      "description": "DMR | Reddingsbrigade Nederland"
+    }
+  },
+  {
+    "model": "gpstracking.trackeridentifiertype",
+    "pk": "GMS",
+    "fields": {
+      "description": "Gemeenschappelijk Meldkamer Systeem"
+    }
+  },
+  {
+    "model": "gpstracking.trackeridentifiertype",
+    "pk": "ICAO",
+    "fields": {
+      "description": "ICAO | Luchtvaart"
+    }
+  },
+  {
+    "model": "gpstracking.trackeridentifiertype",
+    "pk": "MMSI",
+    "fields": {
+      "description": "MMSI | Scheepvaart"
+    }
+  },
+  {
+    "model": "gpstracking.trackeridentifiertype",
+    "pk": "TC1",
+    "fields": {
+      "description": "Traccar | Server 1"
+    }
+  },
+  {
+    "model": "gpstracking.trackeridentifiertype",
+    "pk": "TC2",
+    "fields": {
+      "description": "Traccar | Server 2"
+    }
+  },
+  {
+    "model": "gpstracking.trackeridentifiertype",
+    "pk": "TCUID",
+    "fields": {
+      "description": "Traccar UniqueId"
+    }
+  }
+]

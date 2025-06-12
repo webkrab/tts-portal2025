@@ -46,9 +46,11 @@ INSTALLED_APPS = [
     'django.contrib.gis',
     'leaflet',
     'api',
-    'utils',
+    'gpstracking',
+    'strandveilig',
     'taskschedular',
-    'gpstracking'
+    'utils',
+
 ]
 
 MIDDLEWARE = [

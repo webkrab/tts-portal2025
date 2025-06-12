@@ -1,0 +1,56 @@
+[
+  {
+    "model": "auth.user",
+    "pk": 2,
+    "fields": {
+      "password": "pbkdf2_sha256$870000$HN3Wjw539DyvJXZsDIZ1iT$YQYOBbCc/NWhqhVT+vAslP/MugGLU0j8kAuTzKJ3O14=",
+      "last_login": null,
+      "is_superuser": true,
+      "username": "fwater",
+      "first_name": "",
+      "last_name": "",
+      "email": "f.vandewater@thetrackingsolution.nl",
+      "is_staff": true,
+      "is_active": true,
+      "date_joined": "2025-05-23T20:25:11.586Z",
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "auth.user",
+    "pk": 3,
+    "fields": {
+      "password": "pbkdf2_sha256$870000$E9WOzIUfCTdDrCinCP26qe$cswuwrPHvaLNNkWslCMYaC23aliEDIly6xdrNdQ4pzc=",
+      "last_login": "2025-05-23T20:27:22.201Z",
+      "is_superuser": true,
+      "username": "camende",
+      "first_name": "",
+      "last_name": "",
+      "email": "c.amende@thetrackingsolution.nl",
+      "is_staff": true,
+      "is_active": true,
+      "date_joined": "2025-05-23T20:26:40.094Z",
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "auth.user",
+    "pk": 4,
+    "fields": {
+      "password": "pbkdf2_sha256$870000$1oJwVxFgezU7MzWQojAtcL$FJJRSVdNGUyFDLurLf6evN3BJdfnNF+aeh+FuBqSWy8=",
+      "last_login": null,
+      "is_superuser": true,
+      "username": "bheijselaar",
+      "first_name": "",
+      "last_name": "",
+      "email": "b.heijselaar@thetrackingsolution.nl",
+      "is_staff": true,
+      "is_active": true,
+      "date_joined": "2025-05-23T20:27:11.678Z",
+      "groups": [],
+      "user_permissions": []
+    }
+  }
+]

@@ -6,20 +6,20 @@ import threading
 import websocket
 
 from utils.gen_conv import convert_speed, flatten_multilevel, remap_keys, genereer_hash, convert_to_unixtimestamp
-import utils.mqtt as TTSmqtt
 from gpstracking.models import TrackerDecoder, TrackerIdentifierType
-from utils.logger import get_logger
 from gpstracking.utils_geotracker import get_decoder_mapping, update_mapping_if_missing
+from utils.logger import get_logger
+import utils.mqtt as TTSmqtt
 
 logger = get_logger(__name__)
 
 # ======================
 # 🔧 Configuratie
 # ======================
-SERVERID = "2"
+SERVERID = "1"
 TRACCAR_URL = f"{SERVERID}.lifeguardtracking.nl:8082"
-EMAIL = "django-new"
-PASSWORD = "django-new"
+EMAIL = "fred@thetrackingsolution.nl"
+PASSWORD = "doemaarwat"
 
 
 MQTT_CLIENT = f"proces:TC{SERVERID}"
@@ -27,6 +27,9 @@ MQTT_TOPIC = f"IN/TC/LT{SERVERID}"
 
 
 class Traccar:
+    """
+    Traccar-client voor ophalen en verwerken van GPS-tracking data via REST en WebSocket.
+    """
     def __init__(self):
         # Bind deze instance als globale referentie voor fallback of debug
         global traccar_client
@@ -42,7 +45,7 @@ class Traccar:
         # Start de subscribe-thread met instance callback
         threading.Thread(
             target=TcMqtt.subscribe,
-            args=(f"{MQTT_CLIENT}-sub", MQTT_TOPIC, self._on_mqtt_message),
+            args=(f"{MQTT_CLIENT}-process", MQTT_TOPIC, self._on_mqtt_message),
             daemon=True
         ).start()
         # Start de herstart-timer voor Traccar
@@ -89,7 +92,7 @@ class Traccar:
             devices = response.json()
             message = {"devices": devices}
             rawmessage = {"raw": message, "received": int(time.time() * 1000)}
-            TcMqtt.publish(f"{MQTT_CLIENT}-pub", MQTT_TOPIC, rawmessage)
+            TcMqtt.publish(f"{MQTT_CLIENT}-raw", MQTT_TOPIC, rawmessage)
             logger.info(f"{len(devices)} devices opgehaald en verwerkt via API.")
         except Exception as e:
             logger.error(f"Exception bij ophalen devices: {e}")
@@ -127,7 +130,7 @@ class Traccar:
     def on_ws_message(self, ws, message):
         data = json.loads(message)
         rawmessage = {"raw": data, "received": int(time.time() * 1000)}
-        TcMqtt.publish(f"{MQTT_CLIENT}-pub", MQTT_TOPIC, rawmessage)
+        TcMqtt.publish(f"{MQTT_CLIENT}-raw", MQTT_TOPIC, rawmessage)
 
     def _on_mqtt_message(self, client, userdata, message):
         try:
@@ -228,7 +231,7 @@ class Traccar:
             logger.error(f"Fout bij decoderen: {e} {mqttdata}")
 
     def sender(self, mqttdata):
-        TcMqtt.publish(f"{MQTT_CLIENT}-a-pub", "process/gpstracking", mqttdata)
+        TcMqtt.publish(f"{MQTT_CLIENT}-save", "process/gpstracking", mqttdata)
 
 
 class TcMqtt:

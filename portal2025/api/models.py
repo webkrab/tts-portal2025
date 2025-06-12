@@ -20,16 +20,15 @@ class Gateway(models.Model):
     position = gis_models.PointField(geography=True, blank=True, null=True, srid=4326)
     slug = models.SlugField(max_length=50, unique=True, blank=True)
 
-    datatype = models.CharField(max_length=15, choices=(("traccar", "Tracar"),))
+    datatype = models.CharField(max_length=15, choices=(("traccar", "Traccar"),))
     identifier_prefix = (models.ForeignKey(gpstrackingModel.TrackerIdentifierType, on_delete=models.RESTRICT))
-
 
     host = models.CharField(
             max_length=255,
             blank=True,
             null=True,
             validators=[host_validator],
-            help_text="Voer een geldig IP-adres of domeinnaam in. (geen http(s)://"
+            help_text="Voer een geldig IP-adres of domeinnaam in. (Zonder http(s):// toevoeging)"
     )
     port = models.IntegerField(blank=True, validators=[MinValueValidator(0), MaxValueValidator(65535)])
     database = models.CharField(max_length=255, blank=True)
@@ -46,6 +45,15 @@ class Gateway(models.Model):
     class Meta:
         unique_together = [['host', 'port', 'database', 'table']]
         ordering = ['datatype', 'name']
+
+    @property
+    def url(self):
+        url = None
+        if self.host:
+            url = f"{self.host}"
+            if self.port:
+                url = f"{self.host}:{self.port}"
+        return url
 
     def save(self, *args, **kwargs):
         if not self.slug and self.name:

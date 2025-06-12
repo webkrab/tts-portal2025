@@ -1,4 +1,3 @@
-
 import time
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -57,6 +56,7 @@ def get_alarm_choises():
     ]
     return ALARM_CHOICES
 
+
 def get_gms_status_choices():
     # GMS | Beschrijving                             | BRW | BRW Beschrijving       | AMB | AMB Beschrijving              | POL | POL Beschrijving
     # ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -79,26 +79,25 @@ def get_gms_status_choices():
     # 16  | Alarmering ontvangen                     |     |                         |  0  | Alarmering ontvangen          |     |
 
     GMS_STATUS_CHOICES = [
-        ('0',  'Noodsignaal'),
-        ('1',  'Eigen initiatief'),
-        ('2',  'Aanvraag spraak'),
-        ('3',  'Informatievraag'),
-        ('4',  'Aanrijdend naar incident'),
-        ('5',  'Ter plaatse'),
-        ('6',  'Aanrijdend naar bestemming'),
-        ('7',  'Binnenkort beschikbaar'),
-        ('8',  'Beschikbaar, Onderweg naar standplaats'),
-        ('9',  'Op standplaats'),
-        ('10', 'Vertraagd inzetbaar'),
-        ('11', 'Buiten dienst'),
-        ('12', 'Binnenkort in dienst'),
-        ('13', 'Aanvraag privégesprek'),
-        ('14', 'aanvraag spraak urgent'),
-        ('15', 'Opdracht verstrekt'),
-        ('16', 'Alarmering ontvangen'),
+            ('0', 'Noodsignaal'),
+            ('1', 'Eigen initiatief'),
+            ('2', 'Aanvraag spraak'),
+            ('3', 'Informatievraag'),
+            ('4', 'Aanrijdend naar incident'),
+            ('5', 'Ter plaatse'),
+            ('6', 'Aanrijdend naar bestemming'),
+            ('7', 'Binnenkort beschikbaar'),
+            ('8', 'Beschikbaar, Onderweg naar standplaats'),
+            ('9', 'Op standplaats'),
+            ('10', 'Vertraagd inzetbaar'),
+            ('11', 'Buiten dienst'),
+            ('12', 'Binnenkort in dienst'),
+            ('13', 'Aanvraag privégesprek'),
+            ('14', 'aanvraag spraak urgent'),
+            ('15', 'Opdracht verstrekt'),
+            ('16', 'Alarmering ontvangen'),
     ]
     return GMS_STATUS_CHOICES
-
 
 
 def default_tracker_area():
@@ -141,54 +140,260 @@ def get_tracker_field_choices():
     all_fields = model_fields + [(field, field) for field in extra_fields]
     return model_fields, all_fields
 
+
 def get_icon_choises():
-    icons = {
-            "arrow"           : "Pijl",
-            "default"         : "Standaard",
+    traccar = {
+            "default"         : "_Standaard",
+            "medic"           : "Ambulance",
+            "car"             : "Auto",
+            "boat"            : "Boot",
+            "fire"            : "Brandweer",
+            "bus"             : "Bus",
+            "van"             : "Busje",
             "animal"          : "Dier",
             "bicycle"         : "Fiets",
-            "boat"            : "Boot",
-            "bus"             : "Bus",
-            "car"             : "Auto",
-            "crane"           : "Kraan",
             "helicopter"      : "Helicopter",
+            "crane"           : "Kraan",
+            "arievisser"      : "KNRM Arie Visser",
+            "atlantic"        : "KNRM Atlantic",
+            "float"           : "KNRM Float",
+            "johannesfrederik": "KNRM Johannes Frederik",
+            "khv"             : "KNRM Kusthulpverleningvoertuig",
+            "nh1816"          : "KNRM NH 1816",
+            "nicolaas"        : "KNRM Nicolaas",
+            "valentijn"       : "KNRM Valentijn",
+            "mob"             : "MOB Transponder",
             "motorcycle"      : "Motor",
             "offroad"         : "Offroad",
             "person"          : "Persoon",
             "pickup"          : "Pickup",
-            "plane"           : "Vliegtuig",
-            "ship"            : "Schip",
-            "tractor"         : "Tractor",
-            "train"           : "Trein",
-            "tram"            : "Tram",
-            "trolleybus"      : "Trolleybus",
-            "truck"           : "Vrachtwagen",
-            "van"             : "Busje",
-            "scooter"         : "Scooter",
-            "rwc"             : "RB Waterscooter",
-            "strandjeep"      : "RB Strandjeep",
-            "vlet"            : "RB vlet",
-            "quad"            : "Quad",
-            "rib"             : "Rib",
-            "valentijn"       : "KNRM Valentijn",
-            "arievisser"      : "KNRM Arie Visser",
-            "johannesfrederik": "KNRM Johannes Frederik",
-            "nh1816"          : "KNRM NH 1816",
-            "nicolaas"        : "KNRM Nicolaas",
-            "float"           : "KNRM Float",
-            "atlantic"        : "KNRM Atlantic",
-            "medic"           : "Ambulance",
+            "arrow"           : "Pijl",
             "police"          : "Politie",
-            "fire"            : "Brandweer",
-            "lifeguard"       : "RB Person",
-            "tinn"            : "RB Tinn-Silver",
-            "mob"             : "MOB Transponder",
-            "ribrb"           : "RB RIB",
-            "rws"             : "Rijkswaterstaat",
+            "quad"            : "Quad",
             "atvrb"           : "RB ATV",
             "bicyclerb"       : "RB Fiets",
-            "khv"             : "KNRM Kusthulpverleningvoertuig"
+            "lifeguard"       : "RB Person",
+            "ribrb"           : "RB RIB",
+            "strandjeep"      : "RB Strandjeep",
+            "tinn"            : "RB Tinn-Silver",
+            "vlet"            : "RB vlet",
+            "rwc"             : "RB Waterscooter",
+            "rib"             : "Rib",
+            "rws"             : "Rijkswaterstaat",
+            "ship"            : "Schip",
+            "scooter"         : "Scooter",
+            "tractor"         : "Tractor",
+            "tram"            : "Tram",
+            "train"           : "Trein",
+            "trolleybus"      : "Trolleybus",
+            "plane"           : "Vliegtuig",
+            "truck"           : "Vrachtwagen",
     }
+
+    gms = {
+            "GMS"        : "==== GMS ====",
+            "GMS_AF"     : "GMS Afhijsen",
+            "GMS_AFT"    : "GMS Afhijsen tuilijnen",
+            "GMS_AC"     : "GMS Algemeen commandant",
+            "GMS_AGS"    : "GMS Adviseur gevaarlijke stoffen",
+            "GMS_AFO"    : "GMS Airport fire officer",
+            "GMS_AH"     : "GMS Arbeidshygiëne",
+            "GMS_AL"     : "GMS Autoladder",
+            "GMS_AS"     : "GMS Autospuit",
+            "GMS_AV"     : "GMS Aanvulling bezetting",
+            "GMS_B"      : "GMS Brandweer (In specificatie)",
+            "GMS_BA"     : "GMS Blusarm",
+            "GMS_BB"     : "GMS Bedrijfsbrandweer",
+            "GMS_BBM"    : "GMS Bijzondere blusmiddelen",
+            "GMS_BID"    : "GMS Binnen Drone",
+            "GMS_BR"     : "GMS Brandweer (in basis)",
+            "GMS_BRB"    : "GMS Blusrobot",
+            "GMS_BRV"    : "GMS Brandweervaartuig",
+            "GMS_BS"     : "GMS Brandstoftank",
+            "GMS_BU"     : "GMS Bijzondere uitrusting",
+            "GMS_BUD"    : "GMS Buiten Drone",
+            "GMS_BVD"    : "GMS Bevelvoerder van Dienst",
+            "GMS_BZ"     : "GMS Bevolkingszorg",
+            "GMS_C"      : "GMS Coördinator (in basis)",
+            "GMS_CC"     : "GMS Communicatie (in specificatie, in basis compagnies commandant)",
+            "GMS_CDT"    : "GMS Commandant",
+            "GMS_CI"     : "GMS Coördinatie en informatie voorziening",
+            "GMS_CO"     : "GMS Commando",
+            "GMS_COP"    : "GMS Commandopost",
+            "GMS_COPI"   : "GMS Coördinatie plaats incident",
+            "GMS_CP"     : "GMS Chemiepakteam",
+            "GMS_CT"     : "GMS Crashtender",
+            "GMS_CTL"    : "GMS Centralist",
+            "GMS_CUGS"   : "GMS Coördinator Uitgangsstelling",
+            "GMS_CVD"    : "GMS Commandant van dienst",
+            "GMS_DA"     : "GMS Dienstauto",
+            "GMS_DAD"    : "GMS Duikadviseur",
+            "GMS_DB"     : "GMS Dienstbus",
+            "GMS_DC"     : "GMS Ontsmetting / Decontaminatie",
+            "GMS_DCU"    : "GMS Decentrale uitgifte",
+            "GMS_DF"     : "GMS Defensie",
+            "GMS_DK"     : "GMS Daklijnen set",
+            "GMS_DP"     : "GMS Dompelpomp",
+            "GMS_DPG"    : "GMS Dompelpomp Grote capacitieit",
+            "GMS_DPGW"   : "GMS Dompelpomp Grootschalige Watervoorziening",
+            "GMS_DPK"    : "GMS Dompelpomp Kleine capacitieit",
+            "GMS_DPM"    : "GMS Dompelpomp Middel capacitieit",
+            "GMS_DRG"    : "GMS Drone Groot",
+            "GMS_DS"     : "GMS Druklucht Schuim",
+            "GMS_FBO"    : "GMS Fire bucket operations",
+            "GMS_FL"     : "GMS Functionaris logistiek",
+            "GMS_FR"     : "GMS First Responder",
+            "GMS_G"      : "GMS Groot water (na maat aanduiding)",
+            "GMS_GBT"    : "GMS Gemeentelijk Beleid Team",
+            "GMS_GGB"    : "GMS Grootschalige geneeskundige bijstand",
+            "GMS_GGO"    : "GMS Gebouw gebonden ontsmetting",
+            "GMS_GIM"    : "GMS Geo informatie medewerker",
+            "GMS_GIMCOPI": "GMS Geo informatie medewerker",
+            "GMS_GM"     : "GMS Gereedschap/Materieel",
+            "GMS_GO"     : "GMS Grootschalige ontsmetting",
+            "GMS_GP"     : "GMS Gaspakteam",
+            "GMS_GS"     : "GMS Gevaarlijke stoffen",
+            "GMS_GW"     : "GMS Grootschalige watervoorziening",
+            "GMS_GWNB"   : "GMS Grootschalige Watervoorziening Natuurbrand Bestrijding",
+            "GMS_HA"     : "GMS Haakarmvoertuig",
+            "GMS_HB"     : "GMS Havenbedrijf",
+            "GMS_HBEB"   : "GMS Hoofd bron- en effectbestrijding",
+            "GMS_HC"     : "GMS Handcrew",
+            "GMS_HGO"    : "GMS Hoofd grootschalige ontsmetting",
+            "GMS_HIN"    : "GMS Hoofd informatie",
+            "GMS_HON"    : "GMS Hoofd ondersteuning",
+            "GMS_HOVD"   : "GMS Hoofd officier van dienst",
+            "GMS_HV"     : "GMS Hulpverlening",
+            "GMS_HW"     : "GMS Hoogwerker",
+            "GMS_IB"     : "GMS Industrie brandbestrijding",
+            "GMS_IC"     : "GMS Informatie coördinator",
+            "GMS_ICT"    : "GMS Informatie en communicatie techniek",
+            "GMS_IM"     : "GMS Informatiemanager",
+            "GMS_IV"     : "GMS Informatie voorziening",
+            "GMS_KA"     : "GMS Kantine",
+            "GMS_KHV"    : "GMS Kust hulverlening",
+            "GMS_KST"    : "GMS Koelstoel",
+            "GMS_KW"     : "GMS Kleinschalige watervoorziening",
+            "GMS_L"      : "GMS Logistiek (in toevoeging functie anders LO)",
+            "GMS_LA"     : "GMS Landelijk adviseur",
+            "GMS_LCM"    : "GMS Leiding en Coordi Multi",
+            "GMS_LFO"    : "GMS Landelijke faciliteit ontmantelen",
+            "GMS_LG"     : "GMS Lifeguard team",
+            "GMS_LI"     : "GMS Verlichting",
+            "GMS_LO"     : "GMS Logistiek (Bij materieel L bij functie)",
+            "GMS_LT"     : "GMS Langstransport",
+            "GMS_MA"     : "GMS Medische assistentie",
+            "GMS_MAC"    : "GMS Multi Adviseur C2000",
+            "GMS_MB"     : "GMS Marine Brandweer",
+            "GMS_MF"     : "GMS Multifunctioneel",
+            "GMS_MIRG"   : "GMS Maritime Incident Response Group",
+            "GMS_MKB"    : "GMS Meldkamer Brandweer",
+            "GMS_MOP"    : "GMS Mobiel opstelpunt C2000",
+            "GMS_MOR"    : "GMS Metro Ongeval Redgereedschap",
+            "GMS_MS"     : "GMS Motorspuit",
+            "GMS_MU"     : "GMS Multi CoPI",
+            "GMS_MWS"    : "GMS Medewerker sectie",
+            "GMS_NA"     : "GMS Noodalarmering",
+            "GMS_NB"     : "GMS Natuurbrand",
+            "GMS_NO"     : "GMS Noodprocedure",
+            "GMS_NR"     : "GMS Nationale reddingsvloot",
+            "GMS_NWS"    : "GMS Natuurbrandbestrijding waterschermsysteem",
+            "GMS_O"      : "GMS Open",
+            "GMS_OG"     : "GMS Omgevingsdienst",
+            "GMS_ON"     : "GMS Ondersteuning",
+            "GMS_OO"     : "GMS Opleiden trainen oefenen",
+            "GMS_OP"     : "GMS Operator",
+            "GMS_OPS"    : "GMS Opschaling",
+            "GMS_OR"     : "GMS Oppervlakte redding",
+            "GMS_OS"     : "GMS Olieschermen",
+            "GMS_OSC"    : "GMS On scene commander",
+            "GMS_OVD"    : "GMS Officier van dienst",
+            "GMS_OVDRAIL": "GMS Officier van dienst ProRail",
+            "GMS_OWD"    : "GMS Onderwater Drone",
+            "GMS_OZM"    : "GMS Ook zonder dak- en/of bumpermonitor(en)",
+            "GMS_PA"     : "GMS Patientvervoer",
+            "GMS_PB"     : "GMS Poederblus",
+            "GMS_PBM"    : "GMS Persoonlijke beschermingsmiddelen",
+            "GMS_PC"     : "GMS Pelotons commandant",
+            "GMS_PDB"    : "GMS Paardenbroek",
+            "GMS_PLB"    : "GMS Peloton basis",
+            "GMS_PLG"    : "GMS Peloton IBGS",
+            "GMS_PLL"    : "GMS Peloton logistiek",
+            "GMS_PLR"    : "GMS Peloton redding & THV",
+            "GMS_PLS"    : "GMS Peloton specialistische blussing",
+            "GMS_PLW"    : "GMS Peloton grootschalige watervoorziening",
+            "GMS_PM"     : "GMS Personeel/Materieel",
+            "GMS_PR"     : "GMS Preventie",
+            "GMS_QR"     : "GMS Quick response team",
+            "GMS_QRT"    : "GMS Quick response team",
+            "GMS_R"      : "GMS Redding (Bij functie of indien onvoldoende ruimte RD in andere gevallen.)",
+            "GMS_RA"     : "GMS Regionaal adviseur",
+            "GMS_RB"     : "GMS Reddingsbrigade",
+            "GMS_RD"     : "GMS Redding (Of R indien onvoldoende ruimte voor RD en in functie)",
+            "GMS_RH"     : "GMS Redteam hoogteverschillen",
+            "GMS_RI"     : "GMS Rietdak brandbestrijding",
+            "GMS_RK"     : "GMS Reddingskussen",
+            "GMS_RM"     : "GMS KNRM",
+            "GMS_RO"     : "GMS Rellen en ordeverstoring",
+            "GMS_ROL"    : "GMS Regionaal operationeel leider",
+            "GMS_ROT"    : "GMS Regionaal operationeel team",
+            "GMS_RTV"    : "GMS Ramp terrein verlichting",
+            "GMS_RV"     : "GMS Redvoertuig",
+            "GMS_RWS"    : "GMS Rijkswaterstaat",
+            "GMS_S"      : "GMS Specialistisch en na GW of TPB staat een S voor Slangen",
+            "GMS_SA"     : "GMS Stroom aggregaat",
+            "GMS_SAM"    : "GMS Samenwerking verband IJsselmeer (SAMIJ)",
+            "GMS_SB"     : "GMS Schuimblus",
+            "GMS_SBB"    : "GMS Scheepsbrandbestrijding",
+            "GMS_SH"     : "GMS Specialistische technische hulpverlening (In basis, in spec. STH)",
+            "GMS_SI"     : "GMS Snel inzetbaar",
+            "GMS_SIB"    : "GMS Scheepsincident bestrijding",
+            "GMS_SK"     : "GMS Slagkracht",
+            "GMS_SL"     : "GMS Slangen",
+            "GMS_SN"     : "GMS Sonar",
+            "GMS_SO"     : "GMS Slangen opneem",
+            "GMS_SOB"    : "GMS Spoorsloot overbrugging",
+            "GMS_SPB"    : "GMS Specialistische blussing",
+            "GMS_SR"     : "GMS Surf rescue team",
+            "GMS_ST"     : "GMS Stutmaterieel",
+            "GMS_STH"    : "GMS Specialistische technische hulpverlening (In spec. in basis SH)",
+            "GMS_SV"     : "GMS Schuimvormend middel",
+            "GMS_TBO"    : "GMS Team Brand Onderzoek",
+            "GMS_TC"     : "GMS Taak commandant",
+            "GMS_TD"     : "GMS Technische dienst",
+            "GMS_TDV"    : "GMS Team Digitale Verkenning",
+            "GMS_TES"    : "GMS Test",
+            "GMS_TK"     : "GMS Trekker",
+            "GMS_TL"     : "GMS Teamleider",
+            "GMS_TN"     : "GMS Tent",
+            "GMS_TO"     : "GMS Tactisch officier",
+            "GMS_TPB"    : "GMS Tank (put) brandbestrijding",
+            "GMS_TS"     : "GMS Tankautospuit",
+            "GMS_UHD"    : "GMS Ultra Hoge Druk blussysteem",
+            "GMS_USR"    : "GMS USAR",
+            "GMS_VC"     : "GMS Verbindingscommando",
+            "GMS_VD"     : "GMS Verbindingsdienst",
+            "GMS_VE"     : "GMS Verkenningseenheid (Bij functie bij materieel VK)",
+            "GMS_VER"    : "GMS Verreiker",
+            "GMS_VI"     : "GMS Veetakel installatie",
+            "GMS_VK"     : "GMS Verkenning",
+            "GMS_VL"     : "GMS Voorlichter",
+            "GMS_VN"     : "GMS Ventilator",
+            "GMS_VRB"    : "GMS Verkenningsrobot",
+            "GMS_VTHS"   : "GMS Veiligheidstester Hoogspanning",
+            "GMS_VTLS"   : "GMS Veiligheidstester Laagspanning",
+            "GMS_VZ"     : "GMS Verzorging",
+            "GMS_WB"     : "GMS Waterbassin",
+            "GMS_WC"     : "GMS WC / toiletvoorziening",
+            "GMS_WK"     : "GMS Waterkanon",
+            "GMS_WO"     : "GMS Waterongevallen",
+            "GMS_WOV"    : "GMS Water Ongevallen Vaartuig",
+            "GMS_WS"     : "GMS Waterschermsysteem",
+            "GMS_WSC"    : "GMS Waterscooter",
+            "GMS_WT"     : "GMS Watertank",
+            "GMS_ZS"     : "GMS Zichtscherm",
+    }
+    icons = traccar | gms
     return dict(sorted(icons.items(), key=lambda item: item[1]))
 
 
@@ -261,7 +466,7 @@ class TrackerGroup(models.Model):
             blank=True,
             related_name='groups'
     )
-    ttl = models.IntegerField(default=(2*60), help_text="Leeftijd in minuten, voordat tracker in wordt verborgen in deze groep.")
+    ttl = models.IntegerField(default=(2 * 60), help_text="Leeftijd in minuten, voordat tracker in wordt verborgen in deze groep.")
 
     class Meta:
         ordering = ['smartcode']
@@ -285,12 +490,12 @@ class Tracker(models.Model):
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     custom_name = models.CharField(max_length=255, blank=True, null=True, db_index=True, )
-    icon = models.CharField(        max_length=32, choices=get_icon_choises(), default='default', blank=True, null=True)
-    standplaats = models.ForeignKey(City, on_delete=models.PROTECT,related_name='trackings', null=True)
-    meta_timestamp = models.BigIntegerField(blank=True, null=True,db_index=True,  help_text="UNIX tijd in ms")
+    icon = models.CharField(max_length=32, choices=get_icon_choises(), default='default', blank=True, null=True)
+    standplaats = models.ForeignKey(City, on_delete=models.PROTECT, null=True)
+    meta_timestamp = models.BigIntegerField(blank=True, null=True, db_index=True, help_text="UNIX tijd in ms")
 
-    alarm_type = models.CharField(  max_length=32, choices=get_alarm_choises(), verbose_name='Alarmtype', blank=True, null=True)
-    gms_status = models.CharField(max_length=32, choices=get_alarm_choises(), verbose_name='Status', blank=True, null=True)
+    alarm_type = models.CharField(max_length=32, choices=get_alarm_choises(), verbose_name='Alarmtype', blank=True, null=True)
+    gms_status = models.IntegerField(choices=get_gms_status_choices(), blank=True, null=True)
 
     ais_type = models.CharField(max_length=255, blank=True, null=True)
     ais_name = models.CharField(max_length=255, blank=True, null=True)
@@ -305,11 +510,11 @@ class Tracker(models.Model):
             validators=[MinValueValidator(0), MaxValueValidator(500)],
             default=0, blank=True, null=True
     )
+    ais_status = models.CharField(max_length=32, choices=get_alarm_choises(), blank=True, null=True)
 
     adsb_type = models.CharField(max_length=255, blank=True, null=True)
     adsb_registration = models.CharField(max_length=255, blank=True, null=True)
     adsb_callsign = models.CharField(max_length=255, blank=True, null=True)
-
 
     altitude = models.FloatField(blank=True, null=True)
     speed = models.FloatField(blank=True, null=True)
@@ -415,7 +620,7 @@ class TrackerIdentifier(models.Model):
     """
     Identificatie die een externe ID koppelt aan een specifieke tracker.
     """
-    external_id = models.CharField(max_length=255,db_index=True)
+    external_id = models.CharField(max_length=255, db_index=True)
     identifier_type = models.ForeignKey(TrackerIdentifierType, on_delete=models.PROTECT, related_name='tracker_identifiers')
     tracker = models.ForeignKey(Tracker, on_delete=models.CASCADE, related_name='identifiers')
     identkey = models.CharField(max_length=255, unique=True, editable=False, db_index=True)
